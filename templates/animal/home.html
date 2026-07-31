@@ -1,0 +1,332 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+WildLens AI | Home
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center">
+
+            <div class="col-lg-6">
+                <span class="badge bg-success mb-3 fs-6">
+                    AI Powered Animal Species Detection
+                </span>
+
+                <h1 class="display-4 fw-bold">
+                    Discover Animal Species with Artificial Intelligence
+                </h1>
+
+                <p class="lead text-muted mt-3">
+                    Upload an animal image, let our Machine Learning model
+                    identify the species, and receive detailed information in
+                    seconds. Purchase wallet credits for unlimited predictions.
+                </p>
+
+                <div class="mt-4">
+                    {% comment %} {% if user.is_authenticated %} {% endcomment %}
+                    <a href="#" class="btn btn-success btn-lg me-3">
+                        Identify Species
+                    </a>
+                    {% comment %} {% else %} {% endcomment %}
+                    <a href="/" class="btn btn-success btn-lg me-3">
+                        Get Started
+                    </a>
+
+                    <a href="/" class="btn btn-outline-success btn-lg">
+                        Login
+                    </a>
+                    {% comment %} {% endif %} {% endcomment %}
+                </div>
+            </div>
+
+            <div class="col-lg-6 text-center">
+                <img src="/"
+                     class="img-fluid"
+                     alt="WildLens AI">
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="py-5 bg-light rounded-4">
+
+    <div class="container">
+
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Why Choose WildLens AI?</h2>
+            <p class="text-muted">
+                Fast, secure and intelligent species recognition.
+            </p>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow h-100 text-center p-4">
+
+                    <div class="display-4">
+                        🦁
+                    </div>
+
+                    <h4 class="mt-3">Species Detection</h4>
+
+                    <p class="text-muted">
+                        Detect hundreds of animal species using Deep Learning.
+                    </p>
+
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow h-100 text-center p-4">
+
+                    <div class="display-4">
+                        ⚡
+                    </div>
+
+                    <h4 class="mt-3">Instant Results</h4>
+
+                    <p class="text-muted">
+                        Get predictions within seconds with confidence score.
+                    </p>
+
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow h-100 text-center p-4">
+
+                    <div class="display-4">
+                        💳
+                    </div>
+
+                    <h4 class="mt-3">Wallet System</h4>
+
+                    <p class="text-muted">
+                        Recharge wallet and pay only for predictions you make.
+                    </p>
+
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card border-0 shadow h-100 text-center p-4">
+
+                    <div class="display-4">
+                        📊
+                    </div>
+
+                    <h4 class="mt-3">Prediction History</h4>
+
+                    <p class="text-muted">
+                        View and download all previous prediction reports.
+                    </p>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- How It Works -->
+
+<section class="py-5">
+
+    <div class="container">
+
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">How It Works</h2>
+        </div>
+
+        <div class="row text-center">
+
+            <div class="col-md-3">
+
+                <h1>📷</h1>
+
+                <h5>Upload Image</h5>
+
+                <p class="text-muted">
+                    Upload a clear animal photograph.
+                </p>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <h1>💰</h1>
+
+                <h5>Wallet Check</h5>
+
+                <p class="text-muted">
+                    Credits are verified before prediction.
+                </p>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <h1>🤖</h1>
+
+                <h5>AI Prediction</h5>
+
+                <p class="text-muted">
+                    CNN model predicts the species accurately.
+                </p>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <h1>📄</h1>
+
+                <h5>Get Report</h5>
+
+                <p class="text-muted">
+                    View species details and confidence score.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- Pricing -->
+
+<section class="py-5 bg-light rounded-4">
+
+    <div class="container">
+
+        <div class="text-center mb-5">
+
+            <h2 class="fw-bold">Wallet Credit Plans</h2>
+
+            <p class="text-muted">
+                Buy credits and enjoy uninterrupted predictions.
+            </p>
+
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+
+                <div class="card shadow border-0 text-center p-4">
+
+                    <h3>Starter</h3>
+
+                    <h1 class="text-success">₹49</h1>
+
+                    <p>50 Credits</p>
+
+                    <button class="btn btn-success">
+                        Buy Now
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="card shadow border-success border-3 text-center p-4">
+
+                    <span class="badge bg-success">
+                        Most Popular
+                    </span>
+
+                    <h3 class="mt-3">Pro</h3>
+
+                    <h1 class="text-success">₹99</h1>
+
+                    <p>120 Credits</p>
+
+                    <button class="btn btn-success">
+                        Buy Now
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="card shadow border-0 text-center p-4">
+
+                    <h3>Premium</h3>
+
+                    <h1 class="text-success">₹199</h1>
+
+                    <p>300 Credits</p>
+
+                    <button class="btn btn-success">
+                        Buy Now
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- CTA -->
+
+<section class="py-5">
+
+    <div class="container">
+
+        <div class="card bg-success text-white border-0 shadow-lg">
+
+            <div class="card-body text-center p-5">
+
+                <h2>
+                    Ready to Explore Wildlife?
+                </h2>
+
+                <p class="lead">
+                    Join WildLens AI and identify animal species using
+                    cutting-edge Machine Learning.
+                </p>
+
+                {% comment %} {% if user.is_authenticated %} {% endcomment %}
+
+                <a href="#" class="btn btn-light btn-lg">
+                    Start Prediction
+                </a>
+
+                {% comment %} {% else %} {% endcomment %}
+
+                <a href="/" class="btn btn-light btn-lg">
+                    Create Free Account
+                </a>
+
+                {% comment %} {% endif %} {% endcomment %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
+```
