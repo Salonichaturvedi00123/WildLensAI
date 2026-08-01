@@ -1,0 +1,193 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Predict Species 
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="row justify-content-center">
+
+        <div class="col-lg-8">
+
+            <div class="card shadow-lg border-0 rounded-4">
+
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h2 class="mb-0">
+                        🦁 Animal Species Prediction
+                    </h2>
+                    <p class="mb-0">
+                        Upload an animal image and let AI identify the species.
+                    </p>
+                </div>
+
+                <div class="card-body p-5">
+
+                    <!-- Wallet Balance -->
+
+                    <div class="alert alert-success d-flex justify-content-between align-items-center">
+
+                        <div>
+                            <strong>Wallet Balance</strong><br>
+
+                            {% if user.is_authenticated %}
+                                ₹ {{ wallet.balance|default:"0" }}
+                            {% else %}
+                                ₹ 0
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <a href="#" class="btn btn-success">
+                                Recharge Wallet
+                            </a>
+                        </div>
+
+                    </div>
+
+                    <!-- Upload Form -->
+
+                    <form method="POST" enctype="multipart/form-data">
+
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+
+                            <label class="form-label fw-bold">
+                                Upload Animal Image
+                            </label>
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                name="image"
+                                id="imageInput"
+                                accept="uploads/*"
+                                required>
+
+                        </div>
+
+                        <!-- Preview -->
+
+                        <div class="text-center mb-4">
+
+                            <img
+                                id="preview"
+                                src="{% static 'uploads/upload.png' %}"
+                                class="img-fluid rounded shadow"
+                                style="max-height:300px;">
+
+                        </div>
+
+                        <div class="d-grid">
+
+                            <button class="btn btn-success btn-lg">
+
+                                🔍 Predict Species
+
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% if prediction %}
+
+<div class="container mb-5">
+
+    <div class="card shadow border-0 rounded-4">
+
+        <div class="card-header bg-dark text-white">
+
+            <h3 class="mb-0">
+                Prediction Result
+            </h3>
+
+        </div>
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-5 text-center">
+
+                    <img
+                        src="{{ prediction.image_url.url }}"
+                        class="img-fluid rounded shadow">
+
+                </div>
+
+                <div class="col-md-7">
+
+                    <table class="table">
+
+                        <tr>
+                            <th>Species</th>
+                            <td>{{ prediction.species }}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Confidence</th>
+                            <td>{{ prediction.confidence }}%</td>
+                        </tr>
+
+                        <tr>
+                            <th>Scientific Name</th>
+                            <td>{{ prediction.scientific_name }}</td>
+                        </tr>
+
+
+                        <tr>
+                            <th>Credits Used</th>
+                            <td>{{ prediction.credit_used }} Credit</td>
+                        </tr>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+<script>
+
+const imageInput = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+
+imageInput.onchange = function(){
+
+    const file = this.files[0];
+
+    if(file){
+
+        preview.src = URL.createObjectURL(file);
+
+    }
+
+}
+
+</script>
+
+{% endblock %}
+
