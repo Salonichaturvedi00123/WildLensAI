@@ -45,4 +45,10 @@ def contact(request):
     return render(request, 'animal/contact.html')
 
 def history(request):
-    return render(request, 'animal/history.html') 
+    if request.method == 'GET':
+        predictions = AnimalPrediction.objects.all().order_by('-created_at')
+
+    
+   
+
+    return render(request, 'animal/history.html',{'predictions': predictions}) 
