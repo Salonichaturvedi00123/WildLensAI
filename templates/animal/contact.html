@@ -1,155 +1,130 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}
-Contact Us | WildLens AI
-{% endblock %}
+{% block title %}Contact Support | WildLens AI{% endblock %}
 
 {% block content %}
-
-<div class="container py-5">
-
-    <div class="text-center mb-5">
-        <h1 class="fw-bold text-success">Contact Us</h1>
-        <p class="text-muted">
-            We'd love to hear from you. Send us your questions, feedback, or suggestions.
-        </p>
-    </div>
-
-    <div class="row g-5">
-
-        <!-- Contact Information -->
-        <div class="col-lg-5">
-
-            <div class="card shadow border-0 rounded-4 h-100">
-
-                <div class="card-body p-4">
-
-                    <h3 class="mb-4">Get in Touch</h3>
-
-                    <div class="mb-4">
-                        <h5>📍 Address</h5>
-                        <p class="text-muted">
-                            Ghaziabad, Uttar Pradesh, India
-                        </p>
-                    </div>
-
-                    <div class="mb-4">
-                        <h5>📧 Email</h5>
-                        <p class="text-muted">
-                            support@wildlensai.com
-                        </p>
-                    </div>
-
-                    <div class="mb-4">
-                        <h5>📞 Phone</h5>
-                        <p class="text-muted">
-                            +91 98765 43210
-                        </p>
-                    </div>
-
-                    
-
-                    <div class="mt-4">
-                        <a href="#" class="btn btn-outline-success me-2">
-                            <i class="bi bi-facebook"></i>
-                        </a>
-
-                        <a href="#" class="btn btn-outline-success me-2">
-                            <i class="bi bi-instagram"></i>
-                        </a>
-
-                        <a href="#" class="btn btn-outline-success">
-                            <i class="bi bi-linkedin"></i>
-                        </a>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <!-- Contact Form -->
-        <div class="col-lg-7">
-
-            <div class="card shadow border-0 rounded-4">
-
-                <div class="card-body p-4">
-
-                    <h3 class="mb-4">Send a Message</h3>
-
-                    <form method="POST">
-
-                        {% csrf_token %}
-
-                        <div class="row">
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Full Name</label>
-                                <input type="text"
-                                       name="name"
-                                       class="form-control"
-                                       placeholder="Enter your name"
-                                       required>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email"
-                                       name="email"
-                                       class="form-control"
-                                       placeholder="Enter your email"
-                                       required>
-                            </div>
-
-                        </div>
-
-                        <div class="mb-3">
-
-                            <label class="form-label">Subject</label>
-
-                            <input type="text"
-                                   name="subject"
-                                   class="form-control"
-                                   placeholder="Subject"
-                                   required>
-
-                        </div>
-
-                        <div class="mb-4">
-
-                            <label class="form-label">Message</label>
-
-                            <textarea
-                                name="message"
-                                rows="6"
-                                class="form-control"
-                                placeholder="Write your message here..."
-                                required></textarea>
-
-                        </div>
-
-                        <button type="submit" class="btn btn-success btn-lg">
-                            Send Message
-                        </button>
-
-                    </form>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
+<div class="text-center mb-5">
+    <h1 class="fw-bold text-dark">Get in Touch with WildLens AI</h1>
+    <p class="text-muted mx-auto" style="max-width: 600px;">
+        Questions about our LangGraph wildlife agent, Gemini multimodal identification, or digital wallet credits? Our team is here to assist.
+    </p>
 </div>
-<script>
-    {% if success %}
-        alert('Message sent successfully!');
-    {% endif %}
-</script>
-{% endblock %}
 
+<div class="row g-4 justify-content-center">
+    <!-- Contact Details Card -->
+    <div class="col-lg-5">
+        <div class="card card-modern h-100 p-4 p-md-5">
+            <h3 class="fw-bold mb-4 text-dark">Contact Information</h3>
+
+            <div class="mb-4 d-flex align-items-start">
+                <div class="upload-icon-circle me-3" style="width: 48px; height: 48px; font-size: 1.3rem; margin: 0;">
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-dark">Physical Location</h6>
+                    <p class="text-muted small mb-0">Ghaziabad, Uttar Pradesh, India</p>
+                </div>
+            </div>
+
+            <div class="mb-4 d-flex align-items-start">
+                <div class="upload-icon-circle me-3" style="width: 48px; height: 48px; font-size: 1.3rem; margin: 0;">
+                    <i class="bi bi-envelope" aria-hidden="true"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-dark">Email Support</h6>
+                    <p class="text-muted small mb-0">support@wildlensai.com</p>
+                </div>
+            </div>
+
+            <div class="mb-4 d-flex align-items-start">
+                <div class="upload-icon-circle me-3" style="width: 48px; height: 48px; font-size: 1.3rem; margin: 0;">
+                    <i class="bi bi-telephone" aria-hidden="true"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-1 text-dark">Phone Inquiry</h6>
+                    <p class="text-muted small mb-0">+91 98765 43210</p>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h6 class="fw-bold mb-3 text-dark">Connect on Social Channels</h6>
+            <div class="d-flex gap-2">
+                <a href="#" class="btn btn-outline-forest rounded-circle" style="width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;" aria-label="Visit Facebook">
+                    <i class="bi bi-facebook" aria-hidden="true"></i>
+                </a>
+                <a href="#" class="btn btn-outline-forest rounded-circle" style="width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;" aria-label="Visit Instagram">
+                    <i class="bi bi-instagram" aria-hidden="true"></i>
+                </a>
+                <a href="#" class="btn btn-outline-forest rounded-circle" style="width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;" aria-label="Visit LinkedIn">
+                    <i class="bi bi-linkedin" aria-hidden="true"></i>
+                </a>
+                <a href="#" class="btn btn-outline-forest rounded-circle" style="width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;" aria-label="Visit GitHub">
+                    <i class="bi bi-github" aria-hidden="true"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Form Card -->
+    <div class="col-lg-7">
+        <div class="card card-modern p-4 p-md-5">
+            <h3 class="fw-bold mb-4 text-dark">Send a Message</h3>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-dark">Full Name <span class="text-danger">*</span></label>
+                        <input type="text"
+                               name="name"
+                               class="form-control"
+                               placeholder="Enter your name"
+                               required
+                               autocomplete="name"
+                               aria-label="Full name">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold text-dark">Email Address <span class="text-danger">*</span></label>
+                        <input type="email"
+                               name="email"
+                               class="form-control"
+                               placeholder="Enter your email"
+                               required
+                               autocomplete="email"
+                               aria-label="Email address">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-dark">Subject <span class="text-danger">*</span></label>
+                    <input type="text"
+                           name="subject"
+                           class="form-control"
+                           placeholder="Subject or inquiry topic"
+                           required
+                           aria-label="Subject">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold text-dark">Message <span class="text-danger">*</span></label>
+                    <textarea
+                        name="message"
+                        rows="5"
+                        class="form-control"
+                        placeholder="Write your feedback, inquiry, or question here..."
+                        required
+                        aria-label="Message"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-forest btn-lg w-100 fw-semibold shadow-sm">
+                    <i class="bi bi-send me-2" aria-hidden="true"></i> Submit Message
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -7,82 +7,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
-        {% block title %}
-            WildLens AI
-        {% endblock %}
+        {% block title %}WildLens AI — Your Personal Wildlife Guide{% endblock %}
     </title>
 
-    <!-- Bootstrap -->
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Bootstrap Icons (Pinned Official Release 1.13.2) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.2/font/bootstrap-icons.min.css">
 
-    <!-- Google Font -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <!-- Google Font (Poppins) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Custom CSS -->
+    <!-- WildLens Modern Design System -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
-
-    <style>
-        body{
-            font-family: 'Poppins', sans-serif;
-            background:#f5f7fa;
-        }
-
-        .navbar{
-            background:#0B5D3B;
-        }
-
-        .navbar-brand{
-            font-size:1.6rem;
-            font-weight:700;
-            color:white !important;
-        }
-
-        .nav-link{
-            color:white !important;
-            margin-left:15px;
-            transition:.3s;
-        }
-
-        .nav-link:hover{
-            color:#FFD54F !important;
-        }
-
-        .btn-main{
-            background:#198754;
-            color:white;
-            border:none;
-        }
-
-        .btn-main:hover{
-            background:#146c43;
-            color:white;
-        }
-
-        footer{
-            background:#0B5D3B;
-            color:white;
-            margin-top:80px;
-        }
-
-        .footer-link{
-            color:white;
-            text-decoration:none;
-        }
-
-        .footer-link:hover{
-            color:#FFD54F;
-        }
-
-        main{
-            min-height:80vh;
-        }
-    </style>
 
     {% block css %}{% endblock %}
 </head>
@@ -90,197 +28,198 @@
 <body>
 
 <!-- Navbar -->
-
-<nav class="navbar navbar-expand-lg shadow">
-
+<nav class="navbar navbar-expand-lg navbar-wildlens sticky-top">
     <div class="container">
-
-        <a class="navbar-brand" href="/">
-            🦁 WildLens AI
+        <a class="navbar-brand" href="{% url 'home' %}">
+            <i class="bi bi-binoculars-fill text-warning me-2" aria-hidden="true"></i> WildLens AI
         </a>
 
-        <button class="navbar-toggler bg-light"
+        <button class="navbar-toggler text-white"
             type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#navbar">
-
-            <span class="navbar-toggler-icon"></span>
-
+            data-bs-target="#navbar"
+            aria-controls="navbar"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
+            <i class="bi bi-list fs-2 text-white" aria-hidden="true"></i>
         </button>
 
         <div class="collapse navbar-collapse" id="navbar">
-
-            <ul class="navbar-nav ms-auto">
-
+            <ul class="navbar-nav ms-auto align-items-center">
                 <li class="nav-item">
                     <a href="{% url 'home' %}" class="nav-link">
-                        Home
+                        <i class="bi bi-house me-1" aria-hidden="true"></i> Home
                     </a>
                 </li>
-
                 <li class="nav-item">
                     <a href="{% url 'predict' %}" class="nav-link">
-                        Predict
+                        <i class="bi bi-camera me-1" aria-hidden="true"></i> Identify
                     </a>
                 </li>
-
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        Wallet
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="#" class="nav-link">
-                        Transactions
-                    </a>
-                </li>
-
+                {% if user.is_authenticated %}
                 <li class="nav-item">
                     <a href="{% url 'history' %}" class="nav-link">
-                        History
+                        <i class="bi bi-journal-bookmark me-1" aria-hidden="true"></i> My Discoveries
                     </a>
                 </li>
-
+                <li class="nav-item">
+                    <a href="{% url 'recharge' %}" class="nav-link">
+                        <i class="bi bi-stars text-warning me-1" aria-hidden="true"></i> Credits
+                    </a>
+                </li>
+                {% endif %}
                 <li class="nav-item">
                     <a href="{% url 'contact' %}" class="nav-link">
-                        Contact
+                        <i class="bi bi-envelope me-1" aria-hidden="true"></i> Contact
                     </a>
                 </li>
-
             </ul>
 
-            <div class="ms-3">
-
-                {% comment %} {% if user.is_authenticated %} {% endcomment %}
-
-                    <a href="#" class="btn btn-warning me-2">
-                        <i class="bi bi-wallet2"></i>
-                        {% comment %} ₹ {{ user.profile.wallet }} {% endcomment %}
+            <div class="ms-lg-3 d-flex align-items-center mt-3 mt-lg-0">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'recharge' %}" class="btn btn-warning me-2 text-dark fw-semibold" title="Discovery Credits — Click to Add Credits">
+                        <i class="bi bi-stars me-1" aria-hidden="true"></i> <span class="wallet-balance-display">{{ user.profile.wallet_balance|default:"0"|floatformat:0 }}</span> Credits
                     </a>
-
-                    <a href="/" class="btn btn-light">
-                        Logout
+                    <a href="{% url 'profile' %}" class="btn btn-outline-light me-2">
+                        <i class="bi bi-person-circle me-1" aria-hidden="true"></i> My Account
                     </a>
-
-                {% comment %} {% else %} {% endcomment %}
-
+                    <form method="POST" action="{% url 'logout' %}" class="d-inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-light" aria-label="Log out of WildLens AI">
+                            <i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i> Logout
+                        </button>
+                    </form>
+                {% else %}
                     <a href="{% url 'login' %}" class="btn btn-light me-2">
-                        Login
+                        <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i> Login
                     </a>
-
-                    <a href="/" class="btn btn-warning">
-                        Register
+                    <a href="{% url 'register' %}" class="btn btn-warning text-dark fw-semibold">
+                        <i class="bi bi-person-plus me-1" aria-hidden="true"></i> Register
                     </a>
-
-                {% comment %} {% endif %} {% endcomment %}
-
+                {% endif %}
             </div>
-
         </div>
-
     </div>
-
 </nav>
 
-<!-- Messages -->
-
+<!-- Messages System with Bootstrap Icons -->
+{% if messages %}
 <div class="container mt-3">
-
-    {% comment %} {% if messages %}
-
-        {% for message in messages %} {% endcomment %}
-
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-
-                {% comment %} {{ message }} {% endcomment %}
-
-                <button class="btn-close" data-bs-dismiss="alert"></button>
-
+    {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show shadow-sm d-flex align-items-center" role="alert">
+            <span class="me-2 fs-5">
+                {% if message.tags == 'error' or message.tags == 'danger' %}
+                    <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true"></i>
+                {% elif message.tags == 'warning' %}
+                    <i class="bi bi-exclamation-triangle-fill text-warning" aria-hidden="true"></i>
+                {% elif message.tags == 'success' %}
+                    <i class="bi bi-check-circle-fill text-success" aria-hidden="true"></i>
+                {% else %}
+                    <i class="bi bi-info-circle-fill text-info" aria-hidden="true"></i>
+                {% endif %}
+            </span>
+            <div class="flex-grow-1">
+                {{ message }}
             </div>
-
-        {% comment %} {% endfor %}
-
-    {% endif %} {% endcomment %}
-
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
 </div>
+{% endif %}
 
-<!-- Main -->
-
-<main class="container mt-4">
-
-     {% block content %}
-
-    {% endblock %} 
-
+<!-- Main Body -->
+<main class="container my-4">
+    {% block content %}{% endblock %}
 </main>
 
 <!-- Footer -->
-
-<footer class="py-4">
-
+<footer class="footer-wildlens py-5">
     <div class="container">
-
-        <div class="row">
-
-            <div class="col-md-6">
-
-                <h4>🦁 WildLens AI</h4>
-
-                <p>
-                    AI-powered Animal Species Identification Platform
-                    using Machine Learning and Digital Wallet.
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <h4 class="fw-bold mb-2 d-flex align-items-center">
+                    <i class="bi bi-binoculars-fill text-warning me-2" aria-hidden="true"></i> WildLens AI
+                </h4>
+                <p class="text-warning-emphasis small fw-semibold mb-2">
+                    Your Personal Wildlife Guide
                 </p>
-
-            </div>
-
-            <div class="col-md-3">
-
-                <h5>Quick Links</h5>
-
-                <a href="/" class="footer-link d-block">Home</a>
-                <a href="#" class="footer-link d-block">Predict</a>
-                <a href="#" class="footer-link d-block">Wallet</a>
-
-            </div>
-
-            <div class="col-md-3">
-
-                <h5>Contact</h5>
-
-                <p>
-                    support@wildlensai.com
+                <p class="text-white-50 mb-3" style="max-width: 440px;">
+                    Explore the animal kingdom with your personal wildlife guide. Identify animals, discover fascinating facts, and learn about the world they inhabit.
                 </p>
-
-                <div>
-
-                    <i class="bi bi-facebook fs-4 me-2"></i>
-                    <i class="bi bi-instagram fs-4 me-2"></i>
-                    <i class="bi bi-linkedin fs-4"></i>
-
+                <div class="d-flex flex-wrap gap-2 text-white-50 small">
+                    <span class="badge text-white border border-light border-opacity-25">
+                        <i class="bi bi-camera me-1" aria-hidden="true"></i> Photo Discovery
+                    </span>
+                    <span class="badge text-white border border-light border-opacity-25">
+                        <i class="bi bi-chat-dots me-1" aria-hidden="true"></i> Interactive Guide
+                    </span>
+                    <span class="badge text-white border border-light border-opacity-25">
+                        <i class="bi bi-journal-check me-1" aria-hidden="true"></i> Verified Facts
+                    </span>
+                    <span class="badge text-white border border-light border-opacity-25">
+                        <i class="bi bi-translate me-1" aria-hidden="true"></i> English &amp; Hindi
+                    </span>
                 </div>
-
             </div>
 
+            <div class="col-6 col-lg-3">
+                <h5 class="fw-semibold text-white mb-3">Explore</h5>
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2"><a href="{% url 'home' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> Home</a></li>
+                    <li class="mb-2"><a href="{% url 'predict' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> Identify Animal</a></li>
+                    {% if user.is_authenticated %}
+                        <li class="mb-2"><a href="{% url 'history' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> My Discoveries</a></li>
+                        <li class="mb-2"><a href="{% url 'recharge' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> Discovery Credits</a></li>
+                        <li class="mb-2"><a href="{% url 'profile' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> My Account</a></li>
+                    {% else %}
+                        <li class="mb-2"><a href="{% url 'login' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> Login</a></li>
+                        <li class="mb-2"><a href="{% url 'register' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> Create Account</a></li>
+                    {% endif %}
+                    <li><a href="{% url 'contact' %}" class="footer-link"><i class="bi bi-chevron-right small me-1" aria-hidden="true"></i> Contact Support</a></li>
+                </ul>
+            </div>
+
+            <div class="col-6 col-lg-4">
+                <h5 class="fw-semibold text-white mb-3">Contact &amp; Support</h5>
+                <p class="text-white-50 mb-2 small">
+                    <i class="bi bi-geo-alt text-warning me-2" aria-hidden="true"></i> Ghaziabad, Uttar Pradesh, India
+                </p>
+                <p class="text-white-50 mb-3 small">
+                    <i class="bi bi-envelope text-warning me-2" aria-hidden="true"></i> support@wildlensai.com
+                </p>
+                <div class="d-flex gap-2">
+                    <a href="#" class="footer-social-btn" aria-label="Visit WildLens AI on Facebook">
+                        <i class="bi bi-facebook" aria-hidden="true"></i>
+                    </a>
+                    <a href="#" class="footer-social-btn" aria-label="Visit WildLens AI on Instagram">
+                        <i class="bi bi-instagram" aria-hidden="true"></i>
+                    </a>
+                    <a href="#" class="footer-social-btn" aria-label="Visit WildLens AI on LinkedIn">
+                        <i class="bi bi-linkedin" aria-hidden="true"></i>
+                    </a>
+                    <a href="#" class="footer-social-btn" aria-label="Visit WildLens AI on GitHub">
+                        <i class="bi bi-github" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <hr>
+        <hr class="border-light opacity-25 my-4">
 
-        <div class="text-center">
-
-            © 2026 WildLens AI | Built with Django & Machine Learning
-
+        <div class="d-flex flex-wrap justify-content-between align-items-center text-white-50 small">
+            <div>
+                &copy; 2026 WildLens AI. Every animal has a story. Discover it.
+            </div>
+            <div>
+                Your Personal Wildlife Guide &middot; Educational Wildlife Discovery
+            </div>
         </div>
-
     </div>
-
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-{% block js %}
-
-{% endblock %}
+{% block js %}{% endblock %}
+{% block extra_js %}{% endblock %}
 
 </body>
 </html>

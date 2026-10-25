@@ -1,0 +1,9 @@
+Django>=5.1.0
+python-dotenv>=1.0.0
+pillow>=10.0.0
+httpx>=0.28.0
+langchain-google-genai>=2.0.0
+langgraph>=0.2.0
+markdown-it-py>=3.0.0
+razorpay>=1.4.0
+django-unfold>=0.110.0

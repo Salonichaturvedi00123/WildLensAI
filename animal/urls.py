@@ -1,17 +1,11 @@
-
-from django.urls import path, include
-
-from django.conf import settings
+from django.urls import path
 from . import views
-from django.conf.urls.static import static
 
 urlpatterns = [
-    # path('', views.base, name='base'),
-   path('', views.home, name='home'),
-   path('predict/', views.predict, name='predict'),
-   path('contact/', views.contact, name='contact'),
-   path('history/', views.history, name='history'),
-
+    path('', views.home, name='home'),
+    path('predict/', views.predict, name='predict'),
+    path('contact/', views.contact, name='contact'),
+    path('history/', views.history, name='history'),
+    path('predictions/<int:prediction_id>/', views.prediction_detail, name='prediction_detail'),
+    path('assistant/chat/', views.assistant_chat, name='assistant_chat'),
 ]
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

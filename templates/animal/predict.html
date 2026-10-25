@@ -1,193 +1,464 @@
-
 {% extends 'base.html' %}
-{% load static %}
+{% load static wildlife_tags %}
 
-{% block title %}
-Predict Species 
-{% endblock %}
+{% block title %}Who Did You Discover Today? | WildLens AI{% endblock %}
 
 {% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
 
-<div class="container py-5">
+        <!-- Header Card -->
+        <div class="card card-modern mb-4 overflow-hidden border-0">
+            <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, var(--brand-forest-dark) 0%, var(--brand-forest) 100%);">
+                <h2 class="mb-1 fw-bold d-flex align-items-center justify-content-center">
+                    <i class="bi bi-camera me-2 text-warning" aria-hidden="true"></i> Who Did You Discover Today?
+                </h2>
+                <p class="mb-0 text-white-50">Upload a clear photo of an animal and begin exploring its world.</p>
+            </div>
 
-    <div class="row justify-content-center">
+            <div class="card-body p-4 p-md-5">
 
-        <div class="col-lg-8">
-
-            <div class="card shadow-lg border-0 rounded-4">
-
-                <div class="card-header bg-success text-white text-center py-4">
-                    <h2 class="mb-0">
-                        🦁 Animal Species Prediction
-                    </h2>
-                    <p class="mb-0">
-                        Upload an animal image and let AI identify the species.
-                    </p>
+                <!-- Wallet Status Banner -->
+                <div class="stat-pill d-flex flex-wrap justify-content-between align-items-center mb-4 bg-light">
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
+                        <div class="upload-icon-circle me-3" style="width: 48px; height: 48px; font-size: 1.3rem; margin: 0;">
+                            <i class="bi bi-stars text-warning" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Your Discovery Credits</span>
+                            <span class="fs-4 fw-bold text-success">
+                                {{ profile.wallet_balance|default:"0"|floatformat:0 }}
+                            </span>
+                            <span class="text-muted small">Credits</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle ms-2">1 Credit / Discovery</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'recharge' %}" class="btn btn-warning btn-sm text-dark fw-bold">
+                            <i class="bi bi-stars me-1" aria-hidden="true"></i> Add Credits
+                        </a>
+                        <a href="{% url 'history' %}" class="btn btn-outline-forest btn-sm">
+                            <i class="bi bi-journal-bookmark me-1" aria-hidden="true"></i> My Discoveries
+                        </a>
+                    </div>
                 </div>
 
-                <div class="card-body p-5">
+                <!-- Insufficient Balance Warning -->
+                {% if profile.wallet_balance < 1.00 %}
+                <div class="alert alert-warning d-flex align-items-center shadow-sm mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 text-warning me-3" aria-hidden="true"></i>
+                    <div class="flex-grow-1">
+                        <strong class="d-block">Discovery Credits Needed</strong>
+                        <span class="small">You currently have {{ profile.wallet_balance|floatformat:0 }} credits. Identifying an animal uses 1 discovery credit.</span>
+                    </div>
+                    <a href="{% url 'recharge' %}" class="btn btn-sm btn-dark text-warning fw-bold text-nowrap ms-2">
+                        <i class="bi bi-stars me-1"></i> Add Credits
+                    </a>
+                </div>
+                {% endif %}
 
-                    <!-- Wallet Balance -->
+                <!-- Client-Side Validation Alert Placeholder -->
+                <div id="uploadClientAlert" class="alert alert-danger d-none align-items-center shadow-sm mb-4" role="alert">
+                    <i class="bi bi-exclamation-octagon-fill fs-5 me-2" aria-hidden="true"></i>
+                    <div id="uploadClientAlertText">File error</div>
+                </div>
 
-                    <div class="alert alert-success d-flex justify-content-between align-items-center">
+                <!-- Upload Form -->
+                <form method="POST" enctype="multipart/form-data" id="predictionUploadForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="request_id" id="requestIdInput" value="{{ request_id }}">
 
-                        <div>
-                            <strong>Wallet Balance</strong><br>
+                    <!-- Drag-and-Drop Dropzone -->
+                    <div class="upload-dropzone mb-4" id="dropzoneContainer">
+                        <input
+                            type="file"
+                            name="image"
+                            id="imageInput"
+                            accept="image/jpeg,image/png,image/webp"
+                            required
+                            aria-label="Upload animal photograph">
 
-                            {% if user.is_authenticated %}
-                                ₹ {{ wallet.balance|default:"0" }}
+                        <div class="upload-icon-circle">
+                            <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mb-1">Choose an animal photo or drag it here</h5>
+                        <p class="text-muted small mb-2">or <span class="text-success text-decoration-underline fw-semibold">browse from your device</span></p>
+                        <div class="text-muted small">
+                            <span class="badge bg-light text-dark border me-1">JPEG</span>
+                            <span class="badge bg-light text-dark border me-1">PNG</span>
+                            <span class="badge bg-light text-dark border me-1">WebP</span>
+                            <span class="badge bg-light text-muted border">Max: 5 MB</span>
+                        </div>
+                    </div>
+
+                    <!-- Client Preview Area (Initially Hidden) -->
+                    <div id="previewCard" class="preview-wrapper mb-4 d-none text-center">
+                        <div class="d-flex justify-content-between align-items-center w-100 mb-2 px-2">
+                            <span class="fw-semibold text-dark small" id="previewFileName">Selected File</span>
+                            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2" id="clearPreviewBtn" aria-label="Clear selected photograph">
+                                <i class="bi bi-x me-1" aria-hidden="true"></i> Remove
+                            </button>
+                        </div>
+                        <img id="previewImage" src="" class="preview-image shadow-sm mb-2" alt="Selected Animal Preview">
+                        <span class="badge bg-secondary-subtle text-secondary small" id="previewFileSize">0 KB</span>
+                    </div>
+
+                    <!-- Submit Button with Spinner -->
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-forest btn-lg fw-semibold py-3" id="submitBtn" {% if profile.wallet_balance < 1.00 %}disabled title="Discovery credits needed"{% endif %}>
+                            <i class="bi bi-binoculars me-2" id="submitIcon" aria-hidden="true"></i>
+                            <span id="submitSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true"></span>
+                            <span id="submitBtnText">{% if profile.wallet_balance < 1.00 %}Discovery Credits Needed (1 Credit Required){% else %}Discover This Animal{% endif %}</span>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+
+        <!-- Animal Identification Result Section (Modern Redesign) -->
+        {% if prediction %}
+        <div class="animal-summary-card mb-5 mt-4" id="prediction-result-card">
+            <!-- Header Bar -->
+            <div class="animal-summary-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle me-2 px-2 py-1">
+                        <i class="bi bi-shield-check" aria-hidden="true"></i> Verified Biological Identification
+                    </span>
+                    <span class="text-muted small">Recorded at {{ prediction.created_at|date:"d M Y, h:i A" }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge {% if prediction.identification_status == 'identified' %}badge-status-identified{% elif prediction.identification_status == 'uncertain' %}badge-status-uncertain{% else %}badge-status-not_animal{% endif %} fs-6 px-3 py-2">
+                        <i class="bi {% if prediction.identification_status == 'identified' %}bi-check2-circle{% elif prediction.identification_status == 'uncertain' %}bi-question-circle{% else %}bi-info-circle{% endif %} me-1" aria-hidden="true"></i>
+                        {{ prediction.identification_status|title }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Body: Animal Summary Card -->
+            <div class="p-4 p-md-5">
+                <div class="row align-items-start g-4">
+                    <!-- Uploaded Animal Photograph -->
+                    <div class="col-lg-5">
+                        <div class="animal-summary-image-wrapper shadow-sm">
+                            {% if prediction.uploaded_image %}
+                                <img
+                                    src="{{ prediction.uploaded_image.url }}"
+                                    class="animal-summary-image"
+                                    alt="{{ prediction.common_name }}">
+                            {% elif prediction.image_url %}
+                                <img
+                                    src="{{ prediction.image_url.url }}"
+                                    class="animal-summary-image"
+                                    alt="{{ prediction.common_name }}">
                             {% else %}
-                                ₹ 0
+                                <div class="bg-light p-5 text-center text-muted">
+                                    <i class="bi bi-image fs-1 d-block mb-2 text-secondary" aria-hidden="true"></i>
+                                    <span>Photograph not recorded</span>
+                                </div>
                             {% endif %}
                         </div>
 
-                        <div>
-                            <a href="#" class="btn btn-success">
-                                Recharge Wallet
-                            </a>
+                        <!-- Credit Fee Badge -->
+                        <div class="d-flex justify-content-between align-items-center mt-3 px-3 py-2 bg-light rounded-3 border">
+                            <span class="small text-muted">
+                                <i class="bi bi-stars text-warning me-1" aria-hidden="true"></i> Discovery Credit
+                            </span>
+                            <span class="fw-bold small text-dark">
+                                1 Credit
+                            </span>
                         </div>
-
                     </div>
 
-                    <!-- Upload Form -->
+                    <!-- Animal Taxonomy, Field Marks, & Overview -->
+                    <div class="col-lg-7">
+                        <div class="d-flex flex-wrap justify-content-between align-items-baseline mb-1">
+                            <h2 class="fw-bold text-success mb-0">{{ prediction.common_name }}</h2>
+                        </div>
 
-                    <form method="POST" enctype="multipart/form-data">
+                        <!-- Scientific Name -->
+                        {% if prediction.scientific_name %}
+                            <h5 class="text-muted fst-italic mb-3">{{ prediction.scientific_name }}</h5>
+                        {% else %}
+                            <h6 class="text-muted fst-italic mb-3">Scientific classification: Not available</h6>
+                        {% endif %}
 
-                        {% csrf_token %}
+                        <!-- Uncertain Identification Warning -->
+                        {% if prediction.identification_status == 'uncertain' %}
+                        <div class="alert alert-warning border-warning-subtle d-flex align-items-start mb-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-2 mt-1 fs-5" aria-hidden="true"></i>
+                            <div>
+                                <strong class="d-block text-dark">Tentative Identification</strong>
+                                <span class="small text-muted">
+                                    Observable clues suggest this animal could be <strong>{{ prediction.common_name }}</strong>, but visual traits remain ambiguous. Review the alternative candidates below.
+                                </span>
+                            </div>
+                        </div>
+                        {% endif %}
 
+                        <!-- Identification Notes -->
+                        <div class="bg-light p-3 rounded-3 mb-3 border">
+                            <h6 class="fw-bold text-dark mb-1">
+                                <i class="bi bi-card-text text-success me-1" aria-hidden="true"></i> Field Identification Notes
+                            </h6>
+                            <p class="small text-secondary mb-0">
+                                {{ prediction.identification_notes|default:"Observable field characteristics and identifying notes for this animal." }}
+                            </p>
+                        </div>
+
+                        <!-- Visual Identification Clues -->
+                        <div class="mb-3">
+                            <h6 class="fw-bold text-dark mb-2">
+                                <i class="bi bi-eye text-success me-1" aria-hidden="true"></i> Observable Characteristics
+                            </h6>
+                            {% if prediction.visual_clues %}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for clue in prediction.visual_clues %}
+                                        <span class="clue-item">
+                                            <i class="bi bi-check2 text-success me-1" aria-hidden="true"></i> {{ clue }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="small text-muted mb-0 fst-italic">No specific visual characteristics recorded.</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- Alternative Candidate Species -->
+                        {% if prediction.alternative_species %}
                         <div class="mb-4">
-
-                            <label class="form-label fw-bold">
-                                Upload Animal Image
-                            </label>
-
-                            <input
-                                type="file"
-                                class="form-control"
-                                name="image"
-                                id="imageInput"
-                                accept="uploads/*"
-                                required>
-
+                            <h6 class="fw-bold text-dark mb-2">
+                                <i class="bi bi-question-circle text-warning me-1" aria-hidden="true"></i> Possible Alternative Candidates
+                            </h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for alt in prediction.alternative_species %}
+                                    <span class="alt-species-badge">
+                                        <i class="bi bi-arrow-right-short text-warning me-1" aria-hidden="true"></i> {{ alt }}
+                                    </span>
+                                    {% endfor %}
+                            </div>
                         </div>
+                        {% endif %}
 
-                        <!-- Preview -->
-
-                        <div class="text-center mb-4">
-
-                            <img
-                                id="preview"
-                                src="{% static 'uploads/upload.png' %}"
-                                class="img-fluid rounded shadow"
-                                style="max-height:300px;">
-
+                        <!-- Quick Link to Dossier & Assistant Action Bar -->
+                        <div class="d-flex flex-wrap align-items-center gap-2 pt-3 border-top mt-3">
+                            {% if prediction.wildlife_information %}
+                                <a href="#wildlife-dossier" class="btn btn-outline-forest btn-sm">
+                                    <i class="bi bi-journal-text me-1" aria-hidden="true"></i> Discover This Animal
+                                </a>
+                            {% endif %}
+                            {% if prediction.id %}
+                                <a href="{% url 'prediction_detail' prediction.id %}" class="btn btn-forest btn-sm">
+                                    <i class="bi bi-chat-heart me-1" aria-hidden="true"></i> Ask WildLens Guide
+                                </a>
+                            {% endif %}
                         </div>
-
-                        <div class="d-grid">
-
-                            <button class="btn btn-success btn-lg">
-
-                                🔍 Predict Species
-
-                            </button>
-
-                        </div>
-
-                    </form>
-
+                    </div>
                 </div>
+
+                <!-- Grounded Wildlife Dossier (Section 1 to 10) -->
+                {% if prediction.wildlife_information or prediction.source_references %}
+                <div class="dossier-container pt-4 border-top" id="wildlife-dossier">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                        <div>
+                            <h4 class="fw-bold text-forest mb-1 d-flex align-items-center">
+                                <i class="bi bi-journal-check text-success me-2" aria-hidden="true"></i> Discover This Animal
+                            </h4>
+                            <p class="text-muted small mb-0">
+                                Fascinating facts, natural habitat, diet, and characteristics for this animal.
+                            </p>
+                        </div>
+                    </div>
+
+                    {% get_dossier_sections prediction.wildlife_information prediction.source_references as dossier_sections %}
+                    {% if dossier_sections %}
+                        <div class="row g-3">
+                            {% for sec in dossier_sections %}
+                                <div class="col-12">
+                                    <div class="dossier-section-card">
+                                        <div class="dossier-section-header">
+                                            <i class="{{ sec.icon }} text-success me-2" aria-hidden="true"></i>
+                                            <h6 class="dossier-section-title">{{ sec.title }}</h6>
+                                        </div>
+                                        <div class="dossier-section-body">
+                                            {{ sec.content_html|safe }}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="bg-light p-4 rounded-3 text-center text-muted border">
+                            <i class="bi bi-info-circle fs-3 text-secondary d-block mb-2" aria-hidden="true"></i>
+                            <p class="small mb-0">Detailed wildlife dossier is not verified or not available for this specimen.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                {% endif %}
 
             </div>
-
         </div>
+        {% endif %}
 
     </div>
-
 </div>
-
-{% if prediction %}
-
-<div class="container mb-5">
-
-    <div class="card shadow border-0 rounded-4">
-
-        <div class="card-header bg-dark text-white">
-
-            <h3 class="mb-0">
-                Prediction Result
-            </h3>
-
-        </div>
-
-        <div class="card-body">
-
-            <div class="row">
-
-                <div class="col-md-5 text-center">
-
-                    <img
-                        src="{{ prediction.image_url.url }}"
-                        class="img-fluid rounded shadow">
-
-                </div>
-
-                <div class="col-md-7">
-
-                    <table class="table">
-
-                        <tr>
-                            <th>Species</th>
-                            <td>{{ prediction.species }}</td>
-                        </tr>
-
-                        <tr>
-                            <th>Confidence</th>
-                            <td>{{ prediction.confidence }}%</td>
-                        </tr>
-
-                        <tr>
-                            <th>Scientific Name</th>
-                            <td>{{ prediction.scientific_name }}</td>
-                        </tr>
-
-
-                        <tr>
-                            <th>Credits Used</th>
-                            <td>{{ prediction.credit_used }} Credit</td>
-                        </tr>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endif %}
-
-<script>
-
-const imageInput = document.getElementById("imageInput");
-const preview = document.getElementById("preview");
-
-imageInput.onchange = function(){
-
-    const file = this.files[0];
-
-    if(file){
-
-        preview.src = URL.createObjectURL(file);
-
-    }
-
-}
-
-</script>
-
 {% endblock %}
 
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('imageInput');
+    const dropzone = document.getElementById('dropzoneContainer');
+    const previewCard = document.getElementById('previewCard');
+    const previewImage = document.getElementById('previewImage');
+    const previewFileName = document.getElementById('previewFileName');
+    const previewFileSize = document.getElementById('previewFileSize');
+    const clearPreviewBtn = document.getElementById('clearPreviewBtn');
+    const uploadForm = document.getElementById('predictionUploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const submitIcon = document.getElementById('submitIcon');
+    const submitSpinner = document.getElementById('submitSpinner');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const alertBox = document.getElementById('uploadClientAlert');
+    const alertText = document.getElementById('uploadClientAlertText');
+
+    const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+    const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+
+    function showAlert(msg) {
+        if (alertBox && alertText) {
+            alertText.textContent = msg;
+            alertBox.classList.remove('d-none');
+            alertBox.classList.add('d-flex');
+        }
+    }
+
+    function hideAlert() {
+        if (alertBox) {
+            alertBox.classList.add('d-none');
+            alertBox.classList.remove('d-flex');
+        }
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function handleFile(file) {
+        hideAlert();
+        if (!file) {
+            previewCard.classList.add('d-none');
+            return;
+        }
+
+        // Validate type
+        if (!ALLOWED_MIME.includes(file.type)) {
+            showAlert('Unsupported format: ' + file.type + '. Please select a JPEG, PNG, or WebP photograph.');
+            fileInput.value = '';
+            previewCard.classList.add('d-none');
+            return;
+        }
+
+        // Validate size
+        if (file.size > MAX_BYTES) {
+            showAlert('File exceeds maximum size of 5 MB (Selected: ' + formatFileSize(file.size) + '). Please choose a smaller image.');
+            fileInput.value = '';
+            previewCard.classList.add('d-none');
+            return;
+        }
+
+        // Show Preview
+        previewFileName.textContent = file.name;
+        previewFileSize.textContent = formatFileSize(file.size);
+        previewImage.src = URL.createObjectURL(file);
+        previewCard.classList.remove('d-none');
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                handleFile(this.files[0]);
+            }
+        });
+    }
+
+    // Drag and drop interaction
+    if (dropzone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('drag-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('drag-active');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                fileInput.files = files;
+                handleFile(files[0]);
+            }
+        }, false);
+    }
+
+    if (clearPreviewBtn) {
+        clearPreviewBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            previewCard.classList.add('d-none');
+            previewImage.src = '';
+            hideAlert();
+        });
+    }
+
+    // Double-submission lock with spinner
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                e.preventDefault();
+                showAlert('Please select an animal photograph before submitting.');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (file.size > MAX_BYTES) {
+                e.preventDefault();
+                showAlert('Cannot submit: File exceeds 5 MB.');
+                return;
+            }
+
+            // Lock submit button and cycle through friendly discovery messages
+            submitBtn.disabled = true;
+            submitIcon.classList.add('d-none');
+            submitSpinner.classList.remove('d-none');
+
+            const loadingMessages = [
+                "Looking at your photo...",
+                "Identifying the animal...",
+                "Gathering wildlife information...",
+                "Preparing your discovery..."
+            ];
+            let msgIdx = 0;
+            submitBtnText.textContent = loadingMessages[msgIdx];
+            setInterval(() => {
+                if (msgIdx < loadingMessages.length - 1) {
+                    msgIdx++;
+                    submitBtnText.textContent = loadingMessages[msgIdx];
+                }
+            }, 2500);
+        });
+    }
+});
+</script>
+{% endblock %}

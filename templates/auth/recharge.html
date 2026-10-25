@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Your Discovery Credits | WildLens AI{% endblock %}
+
+{% block content %}
+<!-- Razorpay Test Mode Warning Banner -->
+<div class="alert alert-warning border border-warning shadow-sm d-flex align-items-center mb-4 rounded-3" role="alert">
+    <div class="me-3 fs-3 text-warning">
+        <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+    </div>
+    <div class="flex-grow-1">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong class="d-block text-dark fw-bold">
+                    <i class="bi bi-cone-striped me-1" aria-hidden="true"></i> Razorpay Sandbox Test Mode Active &mdash; Test Payment
+                </strong>
+                <span class="small text-muted">
+                    Test Payment &mdash; No real money will be charged. This platform operates in Razorpay Test Mode (<code>{{ razorpay_mode|upper }}</code>). Use simulated test cards or UPI to add discovery credits.
+                </span>
+            </div>
+            <span class="badge bg-dark text-warning border border-warning px-3 py-2 text-uppercase fw-bold">
+                <i class="bi bi-cpu me-1" aria-hidden="true"></i> Test Mode
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- Header Banner -->
+<div class="card card-modern border-0 text-white shadow-lg overflow-hidden mb-4" style="background: linear-gradient(135deg, var(--brand-forest-dark) 0%, var(--brand-forest) 100%);">
+    <div class="card-body p-4 p-md-5 d-flex flex-wrap align-items-center justify-content-between">
+        <div class="d-flex align-items-center mb-3 mb-md-0">
+            <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center shadow-sm me-4" style="width: 72px; height: 72px;">
+                <i class="bi bi-stars fs-1 text-warning" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h2 class="fw-bold mb-1">Your Discovery Credits</h2>
+                <p class="mb-2 text-white-50 small">
+                    Unlock more wildlife discoveries and continue exploring the animal kingdom.
+                </p>
+                <p class="mb-0 text-white-50 small">
+                    <i class="bi bi-wallet2 me-1" aria-hidden="true"></i> Available Credits: <span class="text-white fw-bold wallet-balance-display">₹{{ profile.wallet_balance|floatformat:2 }}</span> &nbsp;|&nbsp;
+                    <i class="bi bi-compass me-1" aria-hidden="true"></i> Rate: 1 Credit / animal discovery &nbsp;|&nbsp;
+                    <i class="bi bi-shield-check me-1" aria-hidden="true"></i> Instant Delivery
+                </p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'profile' %}" class="btn btn-outline-light">
+                <i class="bi bi-person-circle me-1" aria-hidden="true"></i> My Account
+            </a>
+            <a href="{% url 'predict' %}" class="btn btn-warning fw-semibold text-dark">
+                <i class="bi bi-camera me-1" aria-hidden="true"></i> Identify an Animal
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Status Alert Container for Razorpay Checkout & Reconciliation -->
+<div id="checkout-status-alert-container"></div>
+
+<!-- Credit Plans Section -->
+<div class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+            <h4 class="fw-bold mb-1 text-dark d-flex align-items-center">
+                <i class="bi bi-stars text-warning me-2" aria-hidden="true"></i> Select a Discovery Credits Package
+            </h4>
+            <p class="text-muted small mb-0">Choose a package to add discovery credits with Razorpay Checkout.</p>
+        </div>
+        <span class="badge bg-light text-muted border px-3 py-2">
+            <i class="bi bi-lock-fill text-success me-1" aria-hidden="true"></i> Secure Checkout
+        </span>
+    </div>
+
+    <div class="row g-4">
+        {% for plan in credit_plans %}
+        <div class="col-md-4">
+            <div class="card card-modern h-100 border-0 shadow-sm position-relative overflow-hidden {% if forloop.counter == 2 %}border border-2 border-success{% endif %}">
+                {% if forloop.counter == 2 %}
+                <div class="position-absolute top-0 end-0 bg-success text-white small px-3 py-1 fw-bold rounded-bottom-start shadow-sm" style="font-size: 0.75rem;">
+                    <i class="bi bi-fire me-1" aria-hidden="true"></i> MOST POPULAR
+                </div>
+                {% elif forloop.counter == 3 %}
+                <div class="position-absolute top-0 end-0 bg-dark text-warning small px-3 py-1 fw-bold rounded-bottom-start shadow-sm" style="font-size: 0.75rem;">
+                    <i class="bi bi-award me-1" aria-hidden="true"></i> BEST VALUE
+                </div>
+                {% endif %}
+
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="mb-3">
+                        <span class="text-uppercase tracking-wider fw-bold text-muted small d-block">Package {{ forloop.counter }}</span>
+                        <h4 class="fw-bold text-dark mb-1">{{ plan.name }}</h4>
+                        <p class="text-muted small mb-0">{{ plan.description|default:"Wildlife identification and AI assistant queries." }}</p>
+                    </div>
+
+                    <div class="bg-light rounded-3 p-3 my-3 text-center border">
+                        <div class="d-flex align-items-baseline justify-content-center">
+                            <span class="fs-4 fw-bold text-dark">₹</span>
+                            <span class="display-5 fw-bold text-dark">{{ plan.price|floatformat:0 }}</span>
+                            <span class="text-muted ms-1 small">INR</span>
+                        </div>
+                        <div class="badge bg-success-subtle text-success border border-success-subtle mt-2 px-3 py-2 fs-6">
+                            <i class="bi bi-plus-circle-fill me-1" aria-hidden="true"></i> {{ plan.credits }} Discovery Credits
+                        </div>
+                    </div>
+
+                    <ul class="list-unstyled small text-muted mb-4 flex-grow-1">
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2" aria-hidden="true"></i>
+                            <span><strong>{{ plan.credits }}</strong> wildlife discoveries</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2" aria-hidden="true"></i>
+                            <span>WildLens Guide interactive chat</span>
+                        </li>
+                        <li class="mb-2 d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2" aria-hidden="true"></i>
+                            <span>Voice speech input &amp; spoken answers</span>
+                        </li>
+                        <li class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill text-success me-2" aria-hidden="true"></i>
+                            <span>Saved in My Discoveries</span>
+                        </li>
+                    </ul>
+
+                    {% csrf_token %}
+                    <button type="button"
+                            class="btn {% if forloop.counter == 2 %}btn-forest{% else %}btn-outline-forest{% endif %} w-100 py-2 fw-bold btn-recharge-plan shadow-sm"
+                            data-plan-id="{{ plan.id }}"
+                            data-create-url="{% url 'create_payment_order' %}">
+                        <i class="bi bi-plus-circle-fill me-1" aria-hidden="true"></i> Add Credits
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="bi bi-box-seam fs-1 d-block mb-2 text-muted" aria-hidden="true"></i>
+            <p>No active credit packages available. Please contact administrator.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Test Mode Sandbox Payment Credentials Reference -->
+<div class="card card-modern border-0 mb-5 shadow-sm bg-light">
+    <div class="card-body p-4">
+        <h6 class="fw-bold text-dark d-flex align-items-center mb-2">
+            <i class="bi bi-credit-card-2-front-fill text-primary me-2" aria-hidden="true"></i> Razorpay Test Mode Credentials for Academic Testing
+        </h6>
+        <p class="small text-muted mb-3">
+            In Razorpay Test Mode, use the following official test payment details inside the Checkout modal:
+        </p>
+        <div class="row g-3 small">
+            <div class="col-md-4">
+                <div class="p-3 bg-white rounded border">
+                    <strong class="d-block text-dark mb-1"><i class="bi bi-credit-card me-1 text-primary"></i> Test Card Number</strong>
+                    <code class="fs-6 user-select-all">4111 1111 1111 1111</code>
+                    <div class="text-muted small mt-1">Expiry: Any future date (e.g. 12/28) | CVV: <code>123</code></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-white rounded border">
+                    <strong class="d-block text-dark mb-1"><i class="bi bi-qr-code me-1 text-primary"></i> Test UPI ID</strong>
+                    <code class="fs-6 user-select-all">success@razorpay</code>
+                    <div class="text-muted small mt-1">Simulates instantaneous UPI authorization &amp; capture</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-white rounded border">
+                    <strong class="d-block text-dark mb-1"><i class="bi bi-shield-lock me-1 text-primary"></i> Test OTP / 3D Secure</strong>
+                    <code class="fs-6 user-select-all">123456</code>
+                    <div class="text-muted small mt-1">Enter on mock bank authentication screen</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Razorpay Payment Orders Audit Table -->
+<div class="card card-modern overflow-hidden border-0 mb-4 shadow">
+    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                <i class="bi bi-receipt-cutoff text-success me-2" aria-hidden="true"></i> Razorpay Payment Orders
+            </h5>
+            <small class="text-muted">Gateway order status, captured transactions, and reconciliation</small>
+        </div>
+        <span class="badge bg-light text-muted border">
+            <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i> Live Gateway Reconciliation Available
+        </span>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_orders %}
+        <div class="table-responsive">
+            <table class="table table-modern align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Date &amp; Time</th>
+                        <th>Razorpay Order ID</th>
+                        <th>Plan &amp; Credits</th>
+                        <th>Amount</th>
+                        <th>Gateway Status</th>
+                        <th>Payment ID</th>
+                        <th class="pe-4 text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ord in recent_orders %}
+                    <tr>
+                        <td class="ps-4 text-muted small">
+                            {{ ord.created_at|date:"d M Y, h:i A" }}
+                        </td>
+                        <td>
+                            <code class="user-select-all">{{ ord.razorpay_order_id }}</code>
+                        </td>
+                        <td>
+                            <strong class="text-dark d-block">{{ ord.plan_name }}</strong>
+                            <small class="text-success">+{{ ord.credits_to_grant }} credits</small>
+                        </td>
+                        <td class="fw-bold text-dark">
+                            ₹{{ ord.amount_in_rupees|floatformat:2 }}
+                        </td>
+                        <td>
+                            {% if ord.status == 'paid' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-check-circle-fill me-1" aria-hidden="true"></i> Paid &amp; Credited
+                                </span>
+                            {% elif ord.status == 'pending' %}
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                    <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i> Pending Capture
+                                </span>
+                            {% elif ord.status == 'failed' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                    <i class="bi bi-x-circle-fill me-1" aria-hidden="true"></i> Failed
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border">
+                                    <i class="bi bi-clock me-1" aria-hidden="true"></i> {{ ord.get_status_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">
+                            {% if ord.razorpay_payment_id %}
+                                <code class="user-select-all">{{ ord.razorpay_payment_id }}</code>
+                            {% else %}
+                                <span class="text-muted">&mdash;</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            {% if ord.status != 'paid' %}
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-warning py-0 px-2 btn-reconcile-order"
+                                        data-order-id="{{ ord.razorpay_order_id }}"
+                                        title="Re-check status directly with Razorpay API">
+                                    <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i> Reconcile
+                                </button>
+                            {% else %}
+                                <span class="badge bg-light text-muted border">
+                                    <i class="bi bi-check2-all text-success me-1" aria-hidden="true"></i> Complete
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-credit-card fs-2 text-muted d-block mb-2" aria-hidden="true"></i>
+            <p class="small mb-0">No payment orders initiated yet. Select a package above to begin.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Wallet Transaction Ledger Card -->
+<div class="card card-modern overflow-hidden border-0 mb-4 shadow">
+    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                <i class="bi bi-journal-text text-success me-2" aria-hidden="true"></i> Transaction History
+            </h5>
+            <small class="text-muted">Transaction History &middot; Wallet transaction ledger with idempotency protection</small>
+        </div>
+        <a href="{% url 'profile' %}" class="btn btn-sm btn-outline-forest">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Full Dashboard
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_transactions %}
+        <div class="table-responsive">
+            <table class="table table-modern align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Date &amp; Time</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Balance After</th>
+                        <th class="pe-4">Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in recent_transactions %}
+                    <tr>
+                        <td class="ps-4 text-muted small">
+                            {{ tx.created_at|date:"d M Y, h:i A" }}
+                        </td>
+                        <td>
+                            {% if tx.transaction_type == 'credit_purchase' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-lightning-charge-fill me-1" aria-hidden="true"></i> Credit Purchase (Razorpay)
+                                </span>
+                            {% elif tx.transaction_type == 'signup_bonus' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                    <i class="bi bi-gift me-1" aria-hidden="true"></i> Sign-up Bonus
+                                </span>
+                            {% elif tx.transaction_type == 'prediction_charge' %}
+                                <span class="badge bg-secondary-subtle text-secondary border">
+                                    <i class="bi bi-dash-circle me-1" aria-hidden="true"></i> Identification Fee
+                                </span>
+                            {% elif tx.transaction_type == 'admin_grant' %}
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                    <i class="bi bi-award me-1" aria-hidden="true"></i> Admin Grant
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border">
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tx.amount > 0 %}
+                                <span class="fw-bold text-success">+₹{{ tx.amount|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="fw-bold text-dark">-₹{{ tx.amount|cut:"-"|floatformat:2 }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-semibold text-dark">
+                            ₹{{ tx.balance_after|floatformat:2 }}
+                        </td>
+                        <td class="pe-4 small text-muted">
+                            {{ tx.description|default:"Transaction processed." }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-receipt fs-2 text-muted d-block mb-2" aria-hidden="true"></i>
+            <p class="small mb-0">No transactions recorded yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<!-- Official Razorpay Standard Checkout SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- WildLensAI Razorpay Checkout Handler -->
+<script src="{% static 'js/wallet_checkout.js' %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}
+

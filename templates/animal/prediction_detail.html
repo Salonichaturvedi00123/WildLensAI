@@ -1,0 +1,1894 @@
+{% extends 'base.html' %}
+{% load static wildlife_tags %}
+
+{% block title %}{{ prediction.common_name }} | WildLens Guide | WildLens AI{% endblock %}
+
+{% block content %}
+<!-- Top Header & Breadcrumb -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <a href="{% url 'history' %}" class="btn btn-outline-forest btn-sm mb-2">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to My Discoveries
+        </a>
+        <h2 class="fw-bold text-success mb-1">Meet Your Discovery: {{ prediction.common_name }}</h2>
+        {% if prediction.scientific_name %}
+            <p class="text-muted mb-0 fst-italic">{{ prediction.scientific_name }}</p>
+        {% endif %}
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mt-3 mt-md-0">
+        <span class="badge {% if prediction.identification_status == 'identified' %}badge-status-identified{% elif prediction.identification_status == 'uncertain' %}badge-status-uncertain{% else %}badge-status-not_animal{% endif %} fs-6 px-3 py-2">
+            <i class="bi {% if prediction.identification_status == 'identified' %}bi-check2-circle{% elif prediction.identification_status == 'uncertain' %}bi-question-circle{% else %}bi-info-circle{% endif %} me-1" aria-hidden="true"></i>
+            {{ prediction.identification_status|title }}
+        </span>
+    </div>
+</div>
+
+<!-- Main Two-Column Layout (Left: Dossier & Animal Data, Right: Sticky / Offcanvas Assistant) -->
+<div class="row g-4 sticky-layout-row">
+    <!-- LEFT COLUMN: Animal Identity, Grounded Wildlife Dossier & References -->
+    <div class="col-12 col-lg-7">
+        <!-- Compact Animal Summary Card -->
+        <div class="animal-summary-card mb-4" id="animal-summary-section">
+            <div class="animal-summary-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle me-2 px-2 py-1">
+                        <i class="bi bi-shield-check" aria-hidden="true"></i> Verified Biological Record
+                    </span>
+                    <span class="text-muted small">Recorded on {{ prediction.created_at|date:"d M Y, h:i A" }}</span>
+                </div>
+                <span class="badge {% if prediction.identification_status == 'identified' %}badge-status-identified{% elif prediction.identification_status == 'uncertain' %}badge-status-uncertain{% else %}badge-status-not_animal{% endif %}">
+                    {{ prediction.identification_status|title }}
+                </span>
+            </div>
+
+            <div class="p-4">
+                <div class="row align-items-center g-3 mb-3">
+                    <div class="col-sm-5 col-md-4">
+                        <div class="animal-summary-image-wrapper shadow-sm">
+                            {% if prediction.uploaded_image %}
+                                <img src="{{ prediction.uploaded_image.url }}"
+                                     class="animal-summary-image"
+                                     alt="{{ prediction.common_name }}">
+                            {% else %}
+                                <div class="bg-light p-4 text-center text-muted rounded-3">
+                                    <i class="bi bi-image fs-1 d-block mb-1 text-secondary" aria-hidden="true"></i>
+                                    <small>No photo</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-sm-7 col-md-8">
+                        <h3 class="fw-bold text-forest mb-1">{{ prediction.common_name }}</h3>
+                        {% if prediction.scientific_name %}
+                            <h6 class="text-muted fst-italic mb-3">{{ prediction.scientific_name }}</h6>
+                        {% else %}
+                            <h6 class="text-muted fst-italic mb-3">Scientific classification: Not available</h6>
+                        {% endif %}
+
+                        <div class="d-flex flex-wrap gap-2 text-muted small mb-2">
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-stars text-warning me-1" aria-hidden="true"></i> 1 Discovery Credit
+                            </span>
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-calendar3 text-muted me-1" aria-hidden="true"></i> {{ prediction.created_at|date:"d M Y" }}
+                            </span>
+                            <a href="#wildlife-dossier" class="badge bg-light text-forest border text-decoration-none" title="Jump to Dossier">
+                                <i class="bi bi-journal-text me-1" aria-hidden="true"></i> Jump to Dossier
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Uncertain Identification Warning -->
+                {% if prediction.identification_status == 'uncertain' %}
+                <div class="alert alert-warning border-warning-subtle d-flex align-items-start mb-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2 mt-1 fs-5" aria-hidden="true"></i>
+                    <div>
+                        <strong class="d-block text-dark">Tentative Identification</strong>
+                        <span class="small text-muted">
+                            Observable clues suggest this animal could be <strong>{{ prediction.common_name }}</strong>, but visual traits remain ambiguous. Review the alternative candidate species below.
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Identification Notes -->
+                {% if prediction.identification_notes %}
+                <div class="bg-light p-3 rounded-3 mb-3 border">
+                    <h6 class="fw-bold text-dark mb-1">
+                        <i class="bi bi-card-text text-success me-1" aria-hidden="true"></i> Field Identification Notes
+                    </h6>
+                    <p class="small text-secondary mb-0">
+                        {{ prediction.identification_notes }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Visual Clues -->
+                {% if prediction.visual_clues %}
+                <div class="mb-3">
+                    <h6 class="fw-bold text-dark mb-2">
+                        <i class="bi bi-eye text-success me-1" aria-hidden="true"></i> Observable Characteristics:
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for clue in prediction.visual_clues %}
+                            <span class="clue-item">
+                                <i class="bi bi-check-circle-fill text-success me-1" aria-hidden="true"></i> {{ clue }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Alternative Species -->
+                {% if prediction.alternative_species %}
+                <div class="mb-1">
+                    <h6 class="fw-bold text-dark mb-2">
+                        <i class="bi bi-shuffle text-warning me-1" aria-hidden="true"></i> Potential Alternative Candidates:
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for alt in prediction.alternative_species %}
+                            <span class="alt-species-badge">
+                                <i class="bi bi-question-circle me-1" aria-hidden="true"></i> {{ alt }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grounded Wildlife Dossier -->
+        {% if prediction.wildlife_information or prediction.source_references %}
+        <div class="dossier-container pt-3 border-top mb-4" id="wildlife-dossier">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="fw-bold text-forest mb-1 d-flex align-items-center">
+                        <i class="bi bi-journal-check text-success me-2" aria-hidden="true"></i> Discover This Animal
+                    </h4>
+                    <p class="text-muted small mb-0">
+                        Fascinating facts, natural habitat, diet, and characteristics for this animal.
+                    </p>
+                </div>
+            </div>
+
+            {% get_dossier_sections prediction.wildlife_information prediction.source_references as dossier_sections %}
+            {% if dossier_sections %}
+                <div class="row g-3">
+                    {% for sec in dossier_sections %}
+                        <div class="col-12">
+                            <div class="dossier-section-card">
+                                <div class="dossier-section-header">
+                                    <i class="{{ sec.icon }} text-success me-2" aria-hidden="true"></i>
+                                    <h6 class="dossier-section-title">{{ sec.title }}</h6>
+                                </div>
+                                <div class="dossier-section-body">
+                                    {{ sec.content_html|safe }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="dossier-content bg-light p-3 rounded-3 small text-secondary border">
+                    {{ prediction.wildlife_information|render_dossier }}
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Grounded Biological Sources Card -->
+        {% with sources=prediction.source_references|valid_sources %}
+        {% if sources %}
+        <div class="card card-modern mb-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3 text-dark d-flex align-items-center">
+                    <i class="bi bi-shield-check text-success me-2" aria-hidden="true"></i> Verified Sources &amp; Citations
+                </h5>
+                <ul class="list-group list-group-flush small" id="prediction-sources-list">
+                    {% for ref in sources %}
+                    <li class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center bg-transparent">
+                        <div>
+                            <strong class="d-block text-dark">{{ ref.title|default:ref.source|default:ref.url }}</strong>
+                            {% if ref.source %}
+                                <span class="text-muted small">{{ ref.source }}</span>
+                            {% endif %}
+                        </div>
+                        {% if ref.url %}
+                        <a href="{{ ref.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-forest btn-sm py-0 px-2" aria-label="Verify source on external registry">
+                            <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i> Verify
+                        </a>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- RIGHT COLUMN: Sticky AI Assistant on Desktop / Offcanvas on Mobile -->
+    <div class="col-12 col-lg-5 position-relative">
+        <div class="offcanvas-lg offcanvas-end sticky-assistant-panel"
+             tabindex="-1"
+             id="assistantOffcanvas"
+             aria-labelledby="assistantOffcanvasLabel"
+             role="dialog">
+            <div class="chat-container" id="chat-card">
+                <!-- Modern Chat Header with Drag Handle & Window Mode Controls -->
+                <div class="chat-header chat-header-drag position-relative">
+                    <div class="chat-drag-indicator" aria-hidden="true"></div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-0 d-flex align-items-center" id="assistantOffcanvasLabel" title="WildLens Assistant">
+                                <i class="bi bi-robot text-success me-2" aria-hidden="true"></i> WildLens Guide
+                                <span class="visually-hidden">WildLens Assistant</span>
+                            </h5>
+                            <small class="text-muted d-block mt-1">
+                                Context: <strong class="text-dark">{{ prediction.common_name }}</strong>
+                            </small>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <!-- Processing / Availability State -->
+                            <span class="assistant-status-pill bg-success-subtle text-success border border-success-subtle me-1" id="assistant-status-pill">
+                                <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;" aria-hidden="true"></i> Ready
+                            </span>
+                            <!-- Message Counter -->
+                            <span class="badge bg-light text-secondary border px-2 py-1 me-1" id="msg-counter" title="Total messages">
+                                <i class="bi bi-chat-left-text me-1" aria-hidden="true"></i> {{ conversation_messages.count|default:0 }}
+                            </span>
+
+                            <!-- Desktop Window Mode Action Controls (Dock, Float, Minimize, Maximize, Reset) -->
+                            <div class="d-none d-lg-flex align-items-center gap-1 border-start ps-1 ms-1" id="assistant-window-actions">
+                                <button type="button"
+                                        class="btn-window-action"
+                                        id="btn-assistant-dock"
+                                        title="Undock assistant to floating window"
+                                        aria-label="Undock assistant to floating window">
+                                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                </button>
+                                <button type="button"
+                                        class="btn-window-action"
+                                        id="btn-assistant-minimize"
+                                        title="Minimize assistant"
+                                        aria-label="Minimize assistant">
+                                    <i class="bi bi-dash-lg" aria-hidden="true"></i>
+                                </button>
+                                <button type="button"
+                                        class="btn-window-action"
+                                        id="btn-assistant-maximize"
+                                        title="Maximize assistant"
+                                        aria-label="Maximize assistant">
+                                    <i class="bi bi-arrows-fullscreen" aria-hidden="true"></i>
+                                </button>
+                                <button type="button"
+                                        class="btn-window-action"
+                                        id="btn-assistant-reset"
+                                        title="Reset to default sidebar position"
+                                        aria-label="Reset assistant position and size">
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                                </button>
+                            </div>
+
+                            <!-- Mobile Offcanvas Close Button -->
+                            <button type="button"
+                                    class="btn-close d-lg-none"
+                                    data-bs-dismiss="offcanvas"
+                                    data-bs-target="#assistantOffcanvas"
+                                    aria-label="Close assistant chat panel">
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Audio Settings Toolbar (Auto-Read & Speed) -->
+                    <div class="chat-audio-toolbar d-flex align-items-center justify-content-between px-3 py-1 bg-light border-top text-muted mt-2" style="font-size: 0.75rem;">
+                        <!-- Auto-Read Toggle -->
+                        <div class="form-check form-switch d-inline-flex align-items-center gap-1 mb-0" title="Automatically read new assistant responses aloud">
+                            <input class="form-check-input" type="checkbox" role="switch" id="auto-read-toggle" style="cursor: pointer;">
+                            <label class="form-check-label small text-secondary" for="auto-read-toggle" style="cursor: pointer;">
+                                <i class="bi bi-volume-up text-success me-1" aria-hidden="true"></i>Auto-Read
+                            </label>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Speech Speed Selector -->
+                            <div class="d-inline-flex align-items-center gap-1" title="Speech playback speed">
+                                <i class="bi bi-speedometer2 text-secondary" aria-hidden="true"></i>
+                                <label for="tts-speed-select" class="visually-hidden">Speech Speed</label>
+                                <select id="tts-speed-select" class="form-select form-select-sm py-0 px-1 border-0 bg-transparent text-secondary" style="font-size: 0.75rem; width: auto; cursor: pointer;">
+                                    <option value="0.75">0.75x</option>
+                                    <option value="1" selected>1.0x</option>
+                                    <option value="1.25">1.25x</option>
+                                    <option value="1.5">1.5x</option>
+                                </select>
+                            </div>
+                            <!-- Global Audio Stop Button -->
+                            <button type="button" id="global-tts-stop-btn" class="btn btn-sm btn-outline-danger py-0 px-2 d-none" style="font-size: 0.7rem;" title="Stop speech playback" aria-label="Stop audio playback">
+                                <i class="bi bi-stop-fill me-1" aria-hidden="true"></i> Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Banner with Retry Action -->
+                <div id="chat-error-alert" class="alert alert-danger mx-3 mt-3 mb-0 d-none align-items-center justify-content-between" role="alert">
+                    <div class="d-flex align-items-center flex-wrap gap-1">
+                        <i class="bi bi-exclamation-octagon-fill text-danger me-1" aria-hidden="true"></i>
+                        <span id="chat-error-text">An error occurred.</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 ms-2 d-none" id="chat-retry-btn" aria-label="Retry sending message">
+                            <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i> Retry
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close btn-sm" onclick="hideChatError()" aria-label="Close error notice"></button>
+                </div>
+
+                <!-- Chat Message Stream -->
+                <div class="chat-thread" id="chat-thread">
+                    {% if conversation_messages %}
+                        {% for msg in conversation_messages %}
+                            {% if msg.role == 'user' %}
+                                <!-- User Message -->
+                                <div class="d-flex justify-content-end mb-3 user-message-row">
+                                    <div class="chat-bubble-user shadow-sm">
+                                        <div class="d-flex align-items-center justify-content-between mb-1 gap-2">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-person-circle me-1 small" aria-hidden="true"></i>
+                                                <small class="fw-bold">You</small>
+                                            </div>
+                                            <small class="opacity-75 message-timestamp">{{ msg.created_at|date:"h:i A" }}</small>
+                                        </div>
+                                        <div class="user-text mb-0" style="white-space: pre-wrap;">{{ msg.content }}</div>
+                                    </div>
+                                </div>
+                            {% elif msg.role == 'assistant' %}
+                                <!-- Assistant Message -->
+                                <div class="d-flex justify-content-start mb-3 assistant-message-row">
+                                    <div class="chat-bubble-assistant shadow-sm">
+                                        <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+                                            <div class="d-flex align-items-center text-success">
+                                                <i class="bi bi-robot me-1 small" aria-hidden="true"></i>
+                                                <small class="fw-bold">WildLens Guide</small>
+                                                <span class="badge bg-success-subtle text-success py-0 px-1 border border-success-subtle tts-speaking-indicator ms-2 d-none" style="font-size: 0.65rem;">
+                                                    <i class="bi bi-volume-up me-1" aria-hidden="true"></i>Speaking
+                                                </span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <small class="text-muted message-timestamp me-1">{{ msg.created_at|date:"h:i A" }}</small>
+                                                <!-- Speech Playback Actions -->
+                                                <button type="button"
+                                                        class="btn-msg-action btn-msg-tts btn-msg-play"
+                                                        title="Listen to response"
+                                                        aria-label="Play speech for assistant response">
+                                                    <i class="bi bi-play-fill" aria-hidden="true"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-msg-action btn-msg-tts btn-msg-pause d-none"
+                                                        title="Pause speech"
+                                                        aria-label="Pause speech playback">
+                                                    <i class="bi bi-pause-fill" aria-hidden="true"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-msg-action btn-msg-tts btn-msg-stop d-none"
+                                                        title="Stop speech"
+                                                        aria-label="Stop speech playback">
+                                                    <i class="bi bi-stop-fill" aria-hidden="true"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-msg-action btn-msg-tts btn-msg-replay d-none"
+                                                        title="Replay from start"
+                                                        aria-label="Replay speech from start">
+                                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                                </button>
+                                                <button type="button"
+                                                        class="btn-msg-action btn-msg-copy"
+                                                        title="Copy response to clipboard"
+                                                        aria-label="Copy assistant answer">
+                                                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mb-0 small text-secondary assistant-text">{{ msg.content|render_dossier }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <!-- Empty Conversation Prompt -->
+                        <div class="text-center py-5 text-muted" id="chat-empty-state">
+                            <i class="bi bi-chat-square-dots fs-1 text-success d-block mb-3 opacity-50" aria-hidden="true"></i>
+                            <h6 class="fw-bold text-dark">Hello! I'm your wildlife guide.</h6>
+                            <p class="small text-muted mb-0 mx-auto" style="max-width: 380px;">
+                                Curious about this animal? Ask me anything about its habitat, food, behavior, or unique characteristics.
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Dynamic Live Typing Indicator -->
+                    <div id="chat-typing-indicator" class="d-none mb-3">
+                        <div class="d-flex justify-content-start">
+                            <div class="chat-bubble-assistant shadow-sm">
+                                <div class="d-flex align-items-center text-success small">
+                                    <div class="typing-dots me-2" aria-hidden="true">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                    <span>Finding an answer for you...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Suggestion Question Chips -->
+                <div class="bg-light px-3 py-2 border-top suggested-chips-container">
+                    <div class="d-flex align-items-center gap-1 overflow-x-auto py-1" style="white-space: nowrap;">
+                        <span class="small text-muted me-1"><i class="bi bi-lightbulb me-1" aria-hidden="true"></i>Suggested:</span>
+                        <button type="button" class="btn suggested-chip" data-question="Where does this animal live?">
+                            <i class="bi bi-geo-alt me-1 text-success" aria-hidden="true"></i> Where does it live?
+                        </button>
+                        <button type="button" class="btn suggested-chip" data-question="What does it eat?">
+                            <i class="bi bi-egg-fried me-1 text-success" aria-hidden="true"></i> What does it eat?
+                        </button>
+                        <button type="button" class="btn suggested-chip" data-question="Is this animal endangered?">
+                            <i class="bi bi-shield-exclamation me-1 text-warning" aria-hidden="true"></i> Is it endangered?
+                        </button>
+                        <button type="button" class="btn suggested-chip" data-question="What makes it special?">
+                            <i class="bi bi-stars me-1 text-success" aria-hidden="true"></i> What makes it special?
+                        </button>
+                        <button type="button" class="btn suggested-chip" data-question="Tell me an interesting fact.">
+                            <i class="bi bi-lightbulb me-1 text-warning" aria-hidden="true"></i> Interesting fact
+                        </button>
+                        <button type="button" class="btn suggested-chip suggested-chip-hindi" data-question="इस जानवर के बारे में हिंदी में बताइए">
+                            <i class="bi bi-translate me-1" aria-hidden="true"></i> हिंदी में बताइए
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modern Multiline Message Composer & Voice Input -->
+                <div class="bg-white border-top p-3 chat-input-area">
+                    <!-- Voice Input Feedback & Live Transcription Panel -->
+                    <div id="voice-live-panel" class="d-none voice-live-panel p-2 mb-2 rounded-3 border">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <div class="d-flex align-items-center text-danger small fw-semibold">
+                                <span class="voice-listening-pulse me-2" aria-hidden="true"></span>
+                                <i class="bi bi-soundwave me-1" aria-hidden="true"></i>
+                                <span id="voice-status-text">Listening...</span>
+                            </div>
+                            <button type="button"
+                                    id="voice-stop-btn"
+                                    class="btn btn-sm btn-outline-danger py-0 px-2"
+                                    style="font-size: 0.72rem;"
+                                    title="Stop speech recognition"
+                                    aria-label="Stop speech recognition">
+                                <i class="bi bi-stop-circle me-1" aria-hidden="true"></i> Stop
+                            </button>
+                        </div>
+                        <div class="text-secondary small fst-italic ps-1" id="voice-interim-preview">
+                            Listening... Speak clearly into your microphone.
+                        </div>
+                    </div>
+
+                    <!-- Voice Error / Permission Alert -->
+                    <div id="voice-error-alert" class="alert alert-warning p-2 mb-2 d-none align-items-center justify-content-between small rounded-3" role="alert">
+                        <div class="d-flex align-items-center flex-wrap gap-1">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-1" aria-hidden="true"></i>
+                            <span id="voice-error-text">Microphone error message.</span>
+                        </div>
+                        <button type="button" class="btn-close btn-sm p-1" onclick="hideVoiceError()" aria-label="Close voice alert"></button>
+                    </div>
+
+                    <form id="chat-form" method="POST" action="{% url 'prediction_detail' prediction.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" id="conversation-id" value="{{ conversation.id }}">
+                        <div class="chat-composer-wrapper d-flex align-items-end gap-2 p-2">
+                            <textarea
+                                id="chat-input"
+                                name="message"
+                                class="form-control border-0 bg-transparent chat-composer-textarea px-2 py-1"
+                                placeholder="Ask your wildlife guide..."
+                                maxlength="1000"
+                                rows="1"
+                                required
+                                aria-label="Ask your wildlife guide a question"></textarea>
+
+                            <!-- Microphone Speech-to-Text Button -->
+                            <button type="button"
+                                    id="chat-mic-btn"
+                                    class="btn btn-voice-mic rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width: 38px; height: 38px;"
+                                    title="Start voice input (Speech-to-Text)"
+                                    aria-label="Start voice input with microphone">
+                                <i class="bi bi-mic" id="mic-icon" aria-hidden="true"></i>
+                            </button>
+
+                            <!-- Send Message Button -->
+                            <button type="submit"
+                                    id="chat-send-btn"
+                                    class="btn btn-forest rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width: 38px; height: 38px;"
+                                    title="Send message (Enter)"
+                                    aria-label="Send message">
+                                <i class="bi bi-send-fill" id="send-icon" aria-hidden="true"></i>
+                                <span id="send-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center px-1 mt-2 flex-wrap gap-1 text-muted" style="font-size: 0.72rem;">
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <span><i class="bi bi-keyboard me-1" aria-hidden="true"></i>Enter to send</span>
+                                <!-- Compact Speech Recognition Language Selector -->
+                                <div class="voice-lang-container d-inline-flex align-items-center px-2 py-0 rounded" title="Select speech recognition language">
+                                    <i class="bi bi-translate text-success me-1" aria-hidden="true"></i>
+                                    <label for="voice-lang-select" class="visually-hidden">Speech Recognition Language</label>
+                                    <select id="voice-lang-select" class="form-select form-select-sm py-0 px-1 border-0 bg-transparent text-secondary" style="font-size: 0.72rem; width: auto; cursor: pointer;">
+                                        <option value="en-IN" selected>English (IN)</option>
+                                        <option value="hi-IN">हिंदी (IN)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <span id="char-counter">0/1000</span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- Resize Handle (Visible in Floating Mode) -->
+            <div class="chat-resize-handle" id="chat-resize-handle" title="Drag to resize assistant window" aria-hidden="true">
+                <i class="bi bi-arrows-angle-expand"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Desktop Minimized Floating Launcher Button -->
+<button type="button"
+        id="assistant-minimized-launcher"
+        class="btn btn-forest assistant-minimized-launcher d-none align-items-center gap-2"
+        title="Restore WildLens Guide"
+        aria-label="Restore WildLens Guide">
+    <i class="bi bi-robot fs-5" aria-hidden="true"></i>
+    <span class="fw-semibold">WildLens Guide</span>
+    <span class="badge bg-white text-forest rounded-pill ms-1" id="desktop-minimized-badge">
+        {{ conversation_messages.count|default:0 }}
+    </span>
+</button>
+
+<!-- Mobile Assistant Floating Launcher (Visible only on mobile/tablet < 992px) -->
+<button type="button"
+        class="btn btn-forest mobile-assistant-launcher d-lg-none"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#assistantOffcanvas"
+        aria-controls="assistantOffcanvas"
+        aria-label="Open WildLens Guide chat">
+    <i class="bi bi-chat-dots-fill me-2" aria-hidden="true"></i>
+    <span class="fw-semibold">Ask Wildlife Guide</span>
+    <span class="badge bg-white text-forest rounded-pill ms-1" id="mobile-msg-badge">
+        {{ conversation_messages.count|default:0 }}
+    </span>
+</button>
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/interact.min.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatThread = document.getElementById('chat-thread');
+    const sendBtn = document.getElementById('chat-send-btn');
+    const sendIcon = document.getElementById('send-icon');
+    const sendSpinner = document.getElementById('send-spinner');
+    const typingIndicator = document.getElementById('chat-typing-indicator');
+    const errorAlert = document.getElementById('chat-error-alert');
+    const errorText = document.getElementById('chat-error-text');
+    const retryBtn = document.getElementById('chat-retry-btn');
+    const emptyState = document.getElementById('chat-empty-state');
+    const convId = document.getElementById('conversation-id') ? document.getElementById('conversation-id').value : null;
+    const desktopMsgBadge = document.getElementById('msg-counter');
+    const mobileMsgBadge = document.getElementById('mobile-msg-badge');
+    const statusPill = document.getElementById('assistant-status-pill');
+    const charCounter = document.getElementById('char-counter');
+    const offcanvasElem = document.getElementById('assistantOffcanvas');
+
+    // Voice Input Elements
+    const micBtn = document.getElementById('chat-mic-btn');
+    const micIcon = document.getElementById('mic-icon');
+    const voiceLangSelect = document.getElementById('voice-lang-select');
+    const voiceLivePanel = document.getElementById('voice-live-panel');
+    const voiceStatusText = document.getElementById('voice-status-text');
+    const voiceInterimPreview = document.getElementById('voice-interim-preview');
+    const voiceStopBtn = document.getElementById('voice-stop-btn');
+    const voiceErrorAlert = document.getElementById('voice-error-alert');
+    const voiceErrorText = document.getElementById('voice-error-text');
+
+    // Speech Recognition State
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const isSpeechSupported = !!SpeechRecognition;
+    let recognition = null;
+    let isListening = false;
+    let baseInputText = '';
+
+    // Speech Synthesis (Text-to-Speech) State & Controls
+    const isTTSSupported = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+    const autoReadToggle = document.getElementById('auto-read-toggle');
+    const ttsSpeedSelect = document.getElementById('tts-speed-select');
+    const globalTtsStopBtn = document.getElementById('global-tts-stop-btn');
+    let availableVoices = [];
+
+    function loadVoices() {
+        if (!isTTSSupported) return;
+        try {
+            availableVoices = window.speechSynthesis.getVoices() || [];
+        } catch (e) {
+            availableVoices = [];
+        }
+    }
+
+    if (isTTSSupported) {
+        loadVoices();
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+        }
+    }
+
+    // Clean text extraction: excludes markdown syntax, URLs, LangChain metadata, and HTML
+    function extractCleanSpokenText(container) {
+        if (!container) return '';
+        const textElem = container.querySelector('.assistant-text') || container;
+        let text = textElem.innerText || textElem.textContent || '';
+
+        // Exclude markdown headers (#, ##, ###)
+        text = text.replace(/^#{1,6}\s+/gm, '');
+        // Exclude markdown bold, italics, strikethrough, inline code
+        text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+        text = text.replace(/\*([^*]+)\*/g, '$1');
+        text = text.replace(/__([^_]+)__/g, '$1');
+        text = text.replace(/_([^_]+)_/g, '$1');
+        text = text.replace(/~~([^~]+)~~/g, '$1');
+        text = text.replace(/`([^`]+)`/g, '$1');
+        text = text.replace(/^>\s+/gm, '');
+        // Exclude list bullet symbols
+        text = text.replace(/^[\*\-\+]\s+/gm, '');
+        text = text.replace(/^\d+\.\s+/gm, '');
+        // Convert markdown links [Label](URL) to Label
+        text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        // Exclude raw URLs
+        text = text.replace(/https?:\/\/[^\s]+/gi, '');
+        // Exclude LangChain / Gemini metadata or JSON fragments if any
+        text = text.replace(/\{"type":\s*"text"[^}]*\}/gi, '');
+        text = text.replace(/\{"signature":\s*"[^"]*"\}/gi, '');
+        // Normalize whitespace
+        text = text.replace(/\s+/g, ' ').trim();
+        return text;
+    }
+
+    // Chunk text into sentence-level fragments (~180 chars) to prevent browser TTS freeze
+    function splitIntoSentences(text) {
+        if (!text) return [];
+        const rawSentences = text.match(/[^.!?।\n]+[.!?।\n]+|[^.!?।\n]+$/g) || [text];
+        const chunks = [];
+        let currentChunk = '';
+
+        for (let s of rawSentences) {
+            s = s.trim();
+            if (!s) continue;
+            if ((currentChunk + ' ' + s).length > 180 && currentChunk) {
+                chunks.push(currentChunk.trim());
+                currentChunk = s;
+            } else {
+                currentChunk = currentChunk ? (currentChunk + ' ' + s) : s;
+            }
+        }
+        if (currentChunk.trim()) {
+            chunks.push(currentChunk.trim());
+        }
+        return chunks.length > 0 ? chunks : [text];
+    }
+
+    // Voice selection helper supporting Hindi (hi-IN) and English (en-IN)
+    function selectTTSVoice(isHindi) {
+        if (!availableVoices || availableVoices.length === 0) {
+            loadVoices();
+        }
+        if (!availableVoices || availableVoices.length === 0) return null;
+
+        if (isHindi) {
+            const hiVoice = availableVoices.find(v => (v.lang && (v.lang.startsWith('hi') || v.lang === 'hi-IN' || v.lang === 'hi_IN')) || (v.name && v.name.toLowerCase().includes('hindi')));
+            if (hiVoice) return hiVoice;
+            const enInVoice = availableVoices.find(v => v.lang && (v.lang === 'en-IN' || v.lang === 'en_IN'));
+            if (enInVoice) return enInVoice;
+        } else {
+            const enInVoice = availableVoices.find(v => v.lang && (v.lang === 'en-IN' || v.lang === 'en_IN'));
+            if (enInVoice) return enInVoice;
+            const enVoice = availableVoices.find(v => v.lang && v.lang.startsWith('en'));
+            if (enVoice) return enVoice;
+        }
+        return availableVoices[0] || null;
+    }
+
+    // Central Reusable Speech Synthesis Controller
+    const ttsController = {
+        currentBubble: null,
+        chunks: [],
+        chunkIndex: 0,
+        isPlaying: false,
+        isPaused: false,
+
+        stop() {
+            if (!isTTSSupported) return;
+            try {
+                window.speechSynthesis.cancel();
+            } catch (e) {}
+
+            if (this.currentBubble) {
+                this.setBubbleState(this.currentBubble, 'idle');
+            }
+            this.currentBubble = null;
+            this.chunks = [];
+            this.chunkIndex = 0;
+            this.isPlaying = false;
+            this.isPaused = false;
+            if (globalTtsStopBtn) globalTtsStopBtn.classList.add('d-none');
+        },
+
+        pause() {
+            if (!isTTSSupported || !this.isPlaying) return;
+            try {
+                window.speechSynthesis.pause();
+                this.isPaused = true;
+                if (this.currentBubble) {
+                    this.setBubbleState(this.currentBubble, 'paused');
+                }
+            } catch (e) {}
+        },
+
+        resume() {
+            if (!isTTSSupported || !this.currentBubble) return;
+            try {
+                window.speechSynthesis.resume();
+                this.isPaused = false;
+                this.setBubbleState(this.currentBubble, 'playing');
+            } catch (e) {
+                this.playNextChunk();
+            }
+        },
+
+        replay() {
+            if (!this.currentBubble) return;
+            const bubble = this.currentBubble;
+            this.stop();
+            this.play(bubble);
+        },
+
+        play(bubble) {
+            if (!isTTSSupported) {
+                showVoiceError('Text-to-speech audio playback is not supported in this browser.');
+                return;
+            }
+
+            // Rule 9: Starting playback stops active speech recognition!
+            if (typeof stopListening === 'function') {
+                stopListening();
+            }
+
+            // If resuming current paused message
+            if (this.currentBubble === bubble && this.isPaused) {
+                this.resume();
+                return;
+            }
+
+            // Stop previous message speech before starting a new one
+            this.stop();
+
+            const cleanText = extractCleanSpokenText(bubble);
+            if (!cleanText) return;
+
+            this.currentBubble = bubble;
+            this.chunks = splitIntoSentences(cleanText);
+            this.chunkIndex = 0;
+            this.isPlaying = true;
+            this.isPaused = false;
+
+            if (globalTtsStopBtn) globalTtsStopBtn.classList.remove('d-none');
+            this.setBubbleState(bubble, 'playing');
+
+            this.playNextChunk();
+        },
+
+        playNextChunk() {
+            if (!this.isPlaying || this.isPaused) return;
+
+            if (this.chunkIndex >= this.chunks.length) {
+                this.stop();
+                return;
+            }
+
+            const chunkText = this.chunks[this.chunkIndex];
+            const isHindi = /[\u0900-\u097F]/.test(chunkText) || (voiceLangSelect && voiceLangSelect.value === 'hi-IN');
+            const voice = selectTTSVoice(isHindi);
+            const rate = ttsSpeedSelect ? (parseFloat(ttsSpeedSelect.value) || 1.0) : 1.0;
+
+            const utterance = new SpeechSynthesisUtterance(chunkText);
+            utterance.rate = rate;
+            utterance.lang = isHindi ? 'hi-IN' : 'en-IN';
+            if (voice) {
+                utterance.voice = voice;
+            }
+
+            utterance.onend = () => {
+                if (this.isPlaying && !this.isPaused) {
+                    this.chunkIndex++;
+                    this.playNextChunk();
+                }
+            };
+
+            utterance.onerror = (event) => {
+                if (event.error === 'interrupted' || event.error === 'canceled') {
+                    return;
+                }
+                console.warn('SpeechSynthesisUtterance error:', event.error);
+                this.stop();
+            };
+
+            try {
+                window.speechSynthesis.speak(utterance);
+            } catch (err) {
+                console.warn('TTS speak error:', err);
+                this.stop();
+            }
+        },
+
+        setBubbleState(bubble, state) {
+            if (!bubble) return;
+            const playBtn = bubble.querySelector('.btn-msg-play');
+            const pauseBtn = bubble.querySelector('.btn-msg-pause');
+            const stopBtn = bubble.querySelector('.btn-msg-stop');
+            const replayBtn = bubble.querySelector('.btn-msg-replay');
+            const indicator = bubble.querySelector('.tts-speaking-indicator');
+
+            if (state === 'playing') {
+                if (playBtn) playBtn.classList.add('d-none');
+                if (pauseBtn) {
+                    pauseBtn.classList.remove('d-none');
+                    pauseBtn.classList.add('d-inline-flex');
+                }
+                if (stopBtn) {
+                    stopBtn.classList.remove('d-none');
+                    stopBtn.classList.add('d-inline-flex');
+                }
+                if (replayBtn) {
+                    replayBtn.classList.remove('d-none');
+                    replayBtn.classList.add('d-inline-flex');
+                }
+                if (indicator) indicator.classList.remove('d-none');
+                bubble.classList.add('is-speaking');
+            } else if (state === 'paused') {
+                if (playBtn) {
+                    playBtn.classList.remove('d-none');
+                    playBtn.classList.add('d-inline-flex');
+                    playBtn.setAttribute('title', 'Resume speech');
+                    playBtn.setAttribute('aria-label', 'Resume speech playback');
+                }
+                if (pauseBtn) pauseBtn.classList.add('d-none');
+                if (stopBtn) {
+                    stopBtn.classList.remove('d-none');
+                    stopBtn.classList.add('d-inline-flex');
+                }
+                if (replayBtn) {
+                    replayBtn.classList.remove('d-none');
+                    replayBtn.classList.add('d-inline-flex');
+                }
+                if (indicator) indicator.classList.remove('d-none');
+                bubble.classList.remove('is-speaking');
+            } else {
+                if (playBtn) {
+                    playBtn.classList.remove('d-none');
+                    playBtn.classList.add('d-inline-flex');
+                    playBtn.setAttribute('title', 'Listen to response');
+                    playBtn.setAttribute('aria-label', 'Play speech for assistant response');
+                }
+                if (pauseBtn) pauseBtn.classList.add('d-none');
+                if (stopBtn) stopBtn.classList.add('d-none');
+                if (replayBtn) replayBtn.classList.add('d-none');
+                if (indicator) indicator.classList.add('d-none');
+                bubble.classList.remove('is-speaking');
+            }
+        }
+    };
+
+    if (globalTtsStopBtn) {
+        globalTtsStopBtn.addEventListener('click', function() {
+            ttsController.stop();
+        });
+    }
+
+    if (ttsSpeedSelect) {
+        ttsSpeedSelect.addEventListener('change', function() {
+            if (ttsController.isPlaying && !ttsController.isPaused) {
+                ttsController.replay();
+            }
+        });
+    }
+
+    let isSubmitting = false;
+    let lastAttemptedMessage = '';
+
+    function scrollToBottom() {
+        if (chatThread) {
+            chatThread.scrollTop = chatThread.scrollHeight;
+        }
+    }
+
+    scrollToBottom();
+
+    // Voice Feedback & State Management
+    window.hideVoiceError = function() {
+        if (voiceErrorAlert) {
+            voiceErrorAlert.classList.add('d-none');
+            voiceErrorAlert.classList.remove('d-flex');
+        }
+    };
+
+    function showVoiceError(msg) {
+        if (voiceErrorAlert && voiceErrorText) {
+            voiceErrorText.textContent = msg;
+            voiceErrorAlert.classList.remove('d-none');
+            voiceErrorAlert.classList.add('d-flex');
+            scrollToBottom();
+        }
+    }
+
+    function updateMicState(state) {
+        if (!micBtn || !micIcon) return;
+        micBtn.classList.remove('listening', 'processing', 'unsupported', 'error');
+
+        if (state === 'listening') {
+            micBtn.classList.add('listening');
+            micIcon.className = 'bi bi-mic-fill';
+            micBtn.setAttribute('title', 'Listening... Click to stop voice input');
+            micBtn.setAttribute('aria-label', 'Stop voice input');
+            if (voiceLivePanel) voiceLivePanel.classList.remove('d-none');
+            if (voiceStatusText) voiceStatusText.textContent = 'Listening...';
+        } else if (state === 'processing') {
+            micBtn.classList.add('processing');
+            micIcon.className = 'bi bi-mic';
+            micBtn.setAttribute('title', 'Processing speech...');
+            micBtn.setAttribute('aria-label', 'Processing speech');
+            if (voiceStatusText) voiceStatusText.textContent = 'Processing speech...';
+        } else if (state === 'unsupported') {
+            micBtn.classList.add('unsupported');
+            micIcon.className = 'bi bi-mic-mute';
+            micBtn.setAttribute('title', 'Voice input is not supported in this browser');
+            micBtn.setAttribute('aria-label', 'Voice input unsupported');
+            if (voiceLivePanel) voiceLivePanel.classList.add('d-none');
+        } else if (state === 'error') {
+            micBtn.classList.add('error');
+            micIcon.className = 'bi bi-mic-mute';
+            micBtn.setAttribute('title', 'Microphone error or permission denied');
+            micBtn.setAttribute('aria-label', 'Microphone error');
+            if (voiceLivePanel) voiceLivePanel.classList.add('d-none');
+        } else {
+            // Idle
+            micIcon.className = 'bi bi-mic';
+            micBtn.setAttribute('title', 'Start voice input (Speech-to-Text)');
+            micBtn.setAttribute('aria-label', 'Start voice input');
+            if (voiceLivePanel) voiceLivePanel.classList.add('d-none');
+        }
+    }
+
+    function stopListening() {
+        if (recognition && isListening) {
+            try {
+                recognition.stop();
+            } catch (e) {
+                // Ignore if recognition already stopped
+            }
+        }
+        isListening = false;
+        updateMicState('idle');
+    }
+
+    function initSpeechRecognition() {
+        if (!isSpeechSupported) {
+            updateMicState('unsupported');
+            return;
+        }
+
+        try {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+            recognition.lang = voiceLangSelect ? voiceLangSelect.value : 'en-IN';
+
+            recognition.onstart = function() {
+                isListening = true;
+                updateMicState('listening');
+                hideVoiceError();
+                if (voiceInterimPreview) {
+                    voiceInterimPreview.textContent = 'Listening... Speak clearly into your microphone.';
+                }
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const item = event.results[i];
+                    if (item.isFinal) {
+                        finalTranscript += item[0].transcript;
+                    } else {
+                        interimTranscript += item[0].transcript;
+                    }
+                }
+
+                // Display interim text separately in voice preview
+                if (voiceInterimPreview && interimTranscript) {
+                    voiceInterimPreview.textContent = interimTranscript;
+                }
+
+                // Only commit finalized recognition results to the message input
+                if (finalTranscript) {
+                    const cleanFinal = finalTranscript.trim();
+                    if (cleanFinal) {
+                        if (baseInputText && baseInputText.trim()) {
+                            chatInput.value = baseInputText.trim() + ' ' + cleanFinal;
+                        } else {
+                            chatInput.value = cleanFinal;
+                        }
+                        baseInputText = chatInput.value;
+                        autoResizeTextarea();
+                        if (voiceInterimPreview) {
+                            voiceInterimPreview.textContent = cleanFinal;
+                        }
+                    }
+                }
+            };
+
+            recognition.onerror = function(event) {
+                isListening = false;
+                updateMicState('error');
+
+                const error = event.error;
+                let message = 'Speech recognition error occurred. Please try again.';
+
+                if (error === 'not-allowed' || error === 'permission-denied') {
+                    message = 'Microphone access was denied. Please allow microphone permissions in your browser settings to use voice input.';
+                } else if (error === 'no-speech') {
+                    message = 'No speech was detected. Please try speaking again.';
+                } else if (error === 'audio-capture') {
+                    message = 'No microphone device was detected. Please verify your microphone connection.';
+                } else if (error === 'network') {
+                    message = 'Speech recognition network error. Please verify your connection.';
+                } else if (error === 'service-not-allowed') {
+                    message = 'Speech recognition service is not allowed by this browser.';
+                }
+
+                showVoiceError(message);
+            };
+
+            recognition.onend = function() {
+                isListening = false;
+                updateMicState('idle');
+            };
+
+            recognition.onspeechend = function() {
+                updateMicState('processing');
+            };
+
+        } catch (err) {
+            console.warn('SpeechRecognition initialization error:', err);
+            updateMicState('unsupported');
+        }
+    }
+
+    // Language selector change
+    if (voiceLangSelect) {
+        voiceLangSelect.addEventListener('change', function() {
+            if (recognition) {
+                recognition.lang = this.value;
+            }
+            if (isListening) {
+                stopListening();
+            }
+        });
+    }
+
+    // Microphone button click handler
+    if (micBtn) {
+        micBtn.addEventListener('click', function() {
+            if (!isSpeechSupported) {
+                showVoiceError('Voice speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari, or type your message.');
+                return;
+            }
+
+            // Rule 9: Starting microphone listening stops current TTS speech!
+            ttsController.stop();
+
+            if (isListening) {
+                stopListening();
+            } else {
+                baseInputText = chatInput ? chatInput.value : '';
+                hideVoiceError();
+
+                if (!recognition) {
+                    initSpeechRecognition();
+                }
+
+                if (recognition) {
+                    recognition.lang = voiceLangSelect ? voiceLangSelect.value : 'en-IN';
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        try {
+                            recognition.abort();
+                            setTimeout(() => {
+                                try {
+                                    recognition.start();
+                                } catch (err) {
+                                    showVoiceError('Could not start microphone. Please try again.');
+                                }
+                            }, 120);
+                        } catch (retryErr) {
+                            showVoiceError('Could not start microphone. Please try again.');
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Stop button in voice live panel
+    if (voiceStopBtn) {
+        voiceStopBtn.addEventListener('click', function() {
+            stopListening();
+        });
+    }
+
+    // Stop recognition & speech synthesis when page is unloaded
+    window.addEventListener('beforeunload', function() {
+        if (recognition && isListening) {
+            try {
+                recognition.abort();
+            } catch (e) {}
+        }
+        ttsController.stop();
+    });
+
+    // Initialize speech feature detection
+    initSpeechRecognition();
+
+    // Auto scroll & focus on mobile offcanvas open
+    if (offcanvasElem) {
+        offcanvasElem.addEventListener('shown.bs.offcanvas', function() {
+            scrollToBottom();
+            if (chatInput) {
+                chatInput.focus();
+            }
+        });
+    }
+
+    // Auto-resize textarea as user types
+    function autoResizeTextarea() {
+        if (!chatInput) return;
+        chatInput.style.height = 'auto';
+        const newHeight = Math.min(chatInput.scrollHeight, 130);
+        chatInput.style.height = `${newHeight}px`;
+
+        if (charCounter) {
+            charCounter.textContent = `${chatInput.value.length}/1000`;
+        }
+    }
+
+    if (chatInput) {
+        chatInput.addEventListener('input', autoResizeTextarea);
+
+        // Enter to send, Shift+Enter for newline
+        chatInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!isSubmitting) {
+                    chatForm.dispatchEvent(new Event('submit', { cancelable: true }));
+                }
+            }
+        });
+    }
+
+    window.hideChatError = function() {
+        if (errorAlert) {
+            errorAlert.classList.add('d-none');
+            errorAlert.classList.remove('d-flex');
+        }
+        if (retryBtn) {
+            retryBtn.classList.add('d-none');
+        }
+    };
+
+    function showChatError(msg, canRetry = true) {
+        if (errorAlert && errorText) {
+            errorText.textContent = msg;
+            errorAlert.classList.remove('d-none');
+            errorAlert.classList.add('d-flex');
+            if (retryBtn) {
+                if (canRetry && lastAttemptedMessage) {
+                    retryBtn.classList.remove('d-none');
+                } else {
+                    retryBtn.classList.add('d-none');
+                }
+            }
+            scrollToBottom();
+        }
+    }
+
+    function setAssistantStatus(state) {
+        if (!statusPill) return;
+        if (state === 'thinking') {
+            statusPill.className = 'assistant-status-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+            statusPill.innerHTML = '<i class="bi bi-hourglass-split me-1" aria-hidden="true"></i> Thinking...';
+        } else {
+            statusPill.className = 'assistant-status-pill bg-success-subtle text-success border border-success-subtle';
+            statusPill.innerHTML = '<i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;" aria-hidden="true"></i> Ready';
+        }
+    }
+
+    function updateBadgeCount(delta = 1) {
+        let current = 0;
+        if (desktopMsgBadge) {
+            const m = desktopMsgBadge.innerText.match(/\d+/);
+            if (m) current = parseInt(m[0], 10);
+            current += delta;
+            desktopMsgBadge.innerHTML = `<i class="bi bi-chat-left-text me-1" aria-hidden="true"></i> ${current}`;
+        }
+        if (mobileMsgBadge) {
+            mobileMsgBadge.innerText = current;
+        }
+        const desktopMinBadge = document.getElementById('desktop-minimized-badge');
+        if (desktopMinBadge) {
+            desktopMinBadge.innerText = current;
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Bind copy action to elements
+    function bindCopyAction(scope) {
+        const root = scope || document;
+        root.querySelectorAll('.btn-msg-copy').forEach(btn => {
+            if (btn._hasCopyBound) return;
+            btn._hasCopyBound = true;
+            btn.addEventListener('click', async function() {
+                const bubble = this.closest('.chat-bubble-assistant');
+                const textElem = bubble ? bubble.querySelector('.assistant-text') : null;
+                const textToCopy = textElem ? textElem.innerText : '';
+                if (!textToCopy) return;
+
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    const icon = this.querySelector('i');
+                    if (icon) icon.className = 'bi bi-check2 text-success';
+                    this.classList.add('copied');
+                    this.setAttribute('title', 'Copied to clipboard!');
+                    setTimeout(() => {
+                        if (icon) icon.className = 'bi bi-clipboard';
+                        this.classList.remove('copied');
+                        this.setAttribute('title', 'Copy response to clipboard');
+                    }, 2000);
+                } catch (err) {
+                    // Fallback using textarea
+                    const ta = document.createElement('textarea');
+                    ta.value = textToCopy;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                }
+            });
+        });
+    }
+
+    // Bind speech synthesis actions to assistant message bubbles
+    function bindTTSActions(scope) {
+        const root = scope || document;
+        root.querySelectorAll('.chat-bubble-assistant').forEach(bubble => {
+            const playBtn = bubble.querySelector('.btn-msg-play');
+            const pauseBtn = bubble.querySelector('.btn-msg-pause');
+            const stopBtn = bubble.querySelector('.btn-msg-stop');
+            const replayBtn = bubble.querySelector('.btn-msg-replay');
+
+            if (playBtn && !playBtn._hasTTSBound) {
+                playBtn._hasTTSBound = true;
+                playBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    ttsController.play(bubble);
+                });
+            }
+
+            if (pauseBtn && !pauseBtn._hasTTSBound) {
+                pauseBtn._hasTTSBound = true;
+                pauseBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    ttsController.pause();
+                });
+            }
+
+            if (stopBtn && !stopBtn._hasTTSBound) {
+                stopBtn._hasTTSBound = true;
+                stopBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    ttsController.stop();
+                });
+            }
+
+            if (replayBtn && !replayBtn._hasTTSBound) {
+                replayBtn._hasTTSBound = true;
+                replayBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    ttsController.replay();
+                });
+            }
+        });
+    }
+
+    // Bind copy and speech actions to initially rendered messages
+    bindCopyAction(chatThread);
+    bindTTSActions(chatThread);
+
+    function appendUserBubble(text) {
+        if (emptyState) emptyState.remove();
+
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const wrapper = document.createElement('div');
+        wrapper.className = 'd-flex justify-content-end mb-3 user-message-row';
+        wrapper.innerHTML = `
+            <div class="chat-bubble-user shadow-sm">
+                <div class="d-flex align-items-center justify-content-between mb-1 gap-2">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person-circle me-1 small" aria-hidden="true"></i>
+                        <small class="fw-bold">You</small>
+                    </div>
+                    <small class="opacity-75 message-timestamp">${timeStr}</small>
+                </div>
+                <div class="user-text mb-0" style="white-space: pre-wrap;">${escapeHtml(text)}</div>
+            </div>
+        `;
+        chatThread.insertBefore(wrapper, typingIndicator);
+        updateBadgeCount(1);
+        scrollToBottom();
+    }
+
+    function appendAssistantBubble(text, sources, renderedAnswer) {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const wrapper = document.createElement('div');
+        wrapper.className = 'd-flex justify-content-start mb-3 assistant-message-row';
+
+        let sourcesHtml = '';
+        if (sources && sources.length > 0) {
+            const validSources = sources.filter(s => s && s.url && (s.url.startsWith('http://') || s.url.startsWith('https://')));
+            if (validSources.length > 0) {
+                sourcesHtml = `
+                    <div class="mt-2 pt-2 border-top">
+                        <small class="text-muted d-block mb-1"><i class="bi bi-shield-check text-success me-1" aria-hidden="true"></i>Verified Sources:</small>
+                        <div class="d-flex flex-wrap gap-1">
+                            ${validSources.map(s => `
+                                <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="badge bg-white text-primary border text-decoration-none small">
+                                    <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>${escapeHtml(s.title || s.source || 'Reference')}
+                                </a>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        const bodyHtml = renderedAnswer || `<div style="white-space: pre-line;">${escapeHtml(text)}</div>`;
+
+        wrapper.innerHTML = `
+            <div class="chat-bubble-assistant shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-1 gap-2">
+                    <div class="d-flex align-items-center text-success">
+                        <i class="bi bi-robot me-1 small" aria-hidden="true"></i>
+                        <small class="fw-bold">WildLens Guide</small>
+                        <span class="badge bg-success-subtle text-success py-0 px-1 border border-success-subtle tts-speaking-indicator ms-2 d-none" style="font-size: 0.65rem;">
+                            <i class="bi bi-volume-up me-1" aria-hidden="true"></i>Speaking
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-1">
+                        <small class="text-muted message-timestamp me-1">${timeStr}</small>
+                        <button type="button" class="btn-msg-action btn-msg-tts btn-msg-play" title="Listen to response" aria-label="Play speech for assistant response">
+                            <i class="bi bi-play-fill" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn-msg-action btn-msg-tts btn-msg-pause d-none" title="Pause speech" aria-label="Pause speech playback">
+                            <i class="bi bi-pause-fill" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn-msg-action btn-msg-tts btn-msg-stop d-none" title="Stop speech" aria-label="Stop speech playback">
+                            <i class="bi bi-stop-fill" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn-msg-action btn-msg-tts btn-msg-replay d-none" title="Replay from start" aria-label="Replay speech from start">
+                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn-msg-action btn-msg-copy" title="Copy response to clipboard" aria-label="Copy assistant answer">
+                            <i class="bi bi-clipboard" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-0 small text-secondary assistant-text">${bodyHtml}</div>
+                ${sourcesHtml}
+            </div>
+        `;
+        chatThread.insertBefore(wrapper, typingIndicator);
+        bindCopyAction(wrapper);
+        bindTTSActions(wrapper);
+        updateBadgeCount(1);
+        scrollToBottom();
+        return wrapper.querySelector('.chat-bubble-assistant');
+    }
+
+    function setLoading(isLoading) {
+        isSubmitting = isLoading;
+        if (isLoading) {
+            if (isListening) stopListening();
+            if (micBtn) micBtn.disabled = true;
+            sendBtn.disabled = true;
+            chatInput.disabled = true;
+            sendIcon.classList.add('d-none');
+            sendSpinner.classList.remove('d-none');
+            setAssistantStatus('thinking');
+            typingIndicator.classList.remove('d-none');
+            scrollToBottom();
+        } else {
+            if (micBtn) micBtn.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.disabled = false;
+            sendIcon.classList.remove('d-none');
+            sendSpinner.classList.add('d-none');
+            setAssistantStatus('ready');
+            typingIndicator.classList.add('d-none');
+            autoResizeTextarea();
+            chatInput.focus();
+            scrollToBottom();
+        }
+    }
+
+    async function submitInquiry(message) {
+        if (!message || isSubmitting) return;
+
+        if (isListening) stopListening();
+        hideChatError();
+        hideVoiceError();
+        lastAttemptedMessage = message;
+
+        appendUserBubble(message);
+        chatInput.value = '';
+        autoResizeTextarea();
+        setLoading(true);
+
+        try {
+            const response = await fetch("{% url 'assistant_chat' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({
+                    conversation_id: parseInt(convId, 10),
+                    message: message
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                // Restore input on failure
+                chatInput.value = lastAttemptedMessage;
+                autoResizeTextarea();
+                showChatError(data.error || 'The assistant could not complete your request. Please try again.', true);
+            } else {
+                const newBubble = appendAssistantBubble(data.answer, data.sources, data.rendered_answer);
+                lastAttemptedMessage = '';
+                // Step 7: Auto-Read Feature (only after user has explicitly enabled toggle)
+                if (autoReadToggle && autoReadToggle.checked && newBubble) {
+                    ttsController.play(newBubble);
+                }
+            }
+        } catch (err) {
+            // Restore input on failure
+            chatInput.value = lastAttemptedMessage;
+            autoResizeTextarea();
+            showChatError('Network connection error. Please verify your connection and try again.', true);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    // Retry button click
+    if (retryBtn) {
+        retryBtn.addEventListener('click', function() {
+            if (lastAttemptedMessage) {
+                submitInquiry(lastAttemptedMessage);
+            }
+        });
+    }
+
+    // Suggested question buttons
+    document.querySelectorAll('.suggested-chip').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const question = this.getAttribute('data-question');
+            if (question && !isSubmitting) {
+                submitInquiry(question);
+            }
+        });
+    });
+
+    // Handle form submit
+    if (chatForm) {
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = chatInput.value.trim();
+            if (message) {
+                submitInquiry(message);
+            }
+        });
+    }
+
+    // =========================================================================
+    // Assistant Layout Manager: Dock, Undock/Float, Resize, Minimize, Maximize
+    // =========================================================================
+    const PREFS_KEY = 'wildlens_assistant_prefs';
+
+    const layoutManager = {
+        panel: document.getElementById('assistantOffcanvas'),
+        dockBtn: document.getElementById('btn-assistant-dock'),
+        minimizeBtn: document.getElementById('btn-assistant-minimize'),
+        maximizeBtn: document.getElementById('btn-assistant-maximize'),
+        resetBtn: document.getElementById('btn-assistant-reset'),
+        minimizedLauncher: document.getElementById('assistant-minimized-launcher'),
+        resizeHandle: document.getElementById('chat-resize-handle'),
+
+        state: {
+            mode: 'docked', // 'docked' | 'floating' | 'maximized' | 'minimized'
+            x: null,
+            y: null,
+            width: 440,
+            height: 620,
+            previousMode: 'docked'
+        },
+
+        init() {
+            if (!this.panel) return;
+
+            this.loadPreferences();
+
+            if (this.dockBtn) {
+                this.dockBtn.addEventListener('click', () => {
+                    if (this.state.mode === 'docked') {
+                        this.setMode('floating');
+                    } else {
+                        this.setMode('docked');
+                    }
+                });
+            }
+
+            if (this.minimizeBtn) {
+                this.minimizeBtn.addEventListener('click', () => {
+                    this.setMode('minimized');
+                });
+            }
+
+            if (this.maximizeBtn) {
+                this.maximizeBtn.addEventListener('click', () => {
+                    if (this.state.mode === 'maximized') {
+                        this.setMode(this.state.previousMode === 'docked' ? 'docked' : 'floating');
+                    } else {
+                        this.state.previousMode = this.state.mode;
+                        this.setMode('maximized');
+                    }
+                });
+            }
+
+            if (this.resetBtn) {
+                this.resetBtn.addEventListener('click', () => {
+                    this.resetLayout();
+                });
+            }
+
+            if (this.minimizedLauncher) {
+                this.minimizedLauncher.addEventListener('click', () => {
+                    this.restoreFromMinimized();
+                });
+            }
+
+            window.addEventListener('resize', () => {
+                if (!this.isDesktop()) {
+                    if (this.state.mode === 'floating' || this.state.mode === 'maximized') {
+                        this.setMode('docked', false);
+                    }
+                } else if (this.state.mode === 'floating') {
+                    this.clampBounds();
+                    this.applyFloatingStyles();
+                }
+            });
+
+            if (this.isDesktop()) {
+                this.applyMode(this.state.mode);
+            } else {
+                this.applyMode('docked');
+            }
+        },
+
+        isDesktop() {
+            return window.innerWidth >= 992;
+        },
+
+        loadPreferences() {
+            try {
+                const raw = localStorage.getItem(PREFS_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') {
+                        if (['docked', 'floating', 'maximized', 'minimized'].includes(parsed.mode)) {
+                            this.state.mode = parsed.mode;
+                        }
+                        if (typeof parsed.x === 'number') this.state.x = parsed.x;
+                        if (typeof parsed.y === 'number') this.state.y = parsed.y;
+                        if (typeof parsed.width === 'number') this.state.width = parsed.width;
+                        if (typeof parsed.height === 'number') this.state.height = parsed.height;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not read assistant preferences:', e);
+            }
+        },
+
+        savePreferences() {
+            try {
+                const dataToSave = {
+                    mode: this.state.mode,
+                    x: this.state.x,
+                    y: this.state.y,
+                    width: this.state.width,
+                    height: this.state.height
+                };
+                localStorage.setItem(PREFS_KEY, JSON.stringify(dataToSave));
+            } catch (e) {
+                console.warn('Could not save assistant preferences:', e);
+            }
+        },
+
+        clampBounds() {
+            const minWidth = 340;
+            const maxWidth = Math.min(850, window.innerWidth - 30);
+            const minHeight = 420;
+            const maxHeight = window.innerHeight - 90;
+
+            this.state.width = Math.max(minWidth, Math.min(this.state.width || 440, maxWidth));
+            this.state.height = Math.max(minHeight, Math.min(this.state.height || 620, maxHeight));
+
+            const minX = 10;
+            const maxX = Math.max(minX, window.innerWidth - this.state.width - 20);
+            const minY = 75;
+            const maxY = Math.max(minY, window.innerHeight - this.state.height - 20);
+
+            if (this.state.x === null || isNaN(this.state.x)) {
+                this.state.x = Math.max(minX, window.innerWidth - this.state.width - 40);
+            } else {
+                this.state.x = Math.max(minX, Math.min(this.state.x, maxX));
+            }
+
+            if (this.state.y === null || isNaN(this.state.y)) {
+                this.state.y = 90;
+            } else {
+                this.state.y = Math.max(minY, Math.min(this.state.y, maxY));
+            }
+        },
+
+        setMode(mode, save = true) {
+            if (!this.isDesktop() && (mode === 'floating' || mode === 'maximized')) {
+                mode = 'docked';
+            }
+            this.state.mode = mode;
+            this.applyMode(mode);
+            if (save) {
+                this.savePreferences();
+            }
+        },
+
+        applyMode(mode) {
+            if (!this.panel) return;
+
+            if (window.interact) {
+                try {
+                    window.interact(this.panel).unset();
+                } catch (e) {}
+            }
+
+            if (this.minimizedLauncher) {
+                this.minimizedLauncher.classList.add('d-none');
+                this.minimizedLauncher.classList.remove('d-inline-flex');
+            }
+
+            this.panel.classList.remove('mode-docked', 'mode-floating', 'mode-maximized', 'mode-minimized', 'd-none');
+
+            if (mode === 'minimized') {
+                this.panel.classList.add('mode-minimized', 'd-none');
+                if (this.minimizedLauncher && this.isDesktop()) {
+                    this.minimizedLauncher.classList.remove('d-none');
+                    this.minimizedLauncher.classList.add('d-inline-flex');
+                }
+                return;
+            }
+
+            if (mode === 'maximized') {
+                this.panel.classList.add('mode-maximized');
+                this.panel.style.position = 'fixed';
+                this.panel.style.top = '80px';
+                this.panel.style.left = '50%';
+                this.panel.style.transform = 'translateX(-50%)';
+                this.panel.style.width = 'min(92vw, 1100px)';
+                this.panel.style.height = 'calc(100vh - 100px)';
+                this.panel.style.zIndex = '1070';
+
+                this.updateButtonStates('maximized');
+                return;
+            }
+
+            if (mode === 'floating') {
+                this.clampBounds();
+                this.panel.classList.add('mode-floating');
+                this.applyFloatingStyles();
+                this.initInteract();
+                this.updateButtonStates('floating');
+                return;
+            }
+
+            // Docked Mode
+            this.panel.classList.add('mode-docked');
+            this.panel.style.position = '';
+            this.panel.style.left = '';
+            this.panel.style.top = '';
+            this.panel.style.width = '';
+            this.panel.style.height = '';
+            this.panel.style.transform = '';
+            this.panel.style.zIndex = '';
+
+            this.updateButtonStates('docked');
+        },
+
+        applyFloatingStyles() {
+            if (!this.panel) return;
+            this.panel.style.position = 'fixed';
+            this.panel.style.zIndex = '1060';
+            this.panel.style.left = `${this.state.x}px`;
+            this.panel.style.top = `${this.state.y}px`;
+            this.panel.style.width = `${this.state.width}px`;
+            this.panel.style.height = `${this.state.height}px`;
+            this.panel.style.transform = 'none';
+        },
+
+        initInteract() {
+            if (!window.interact || !this.panel) return;
+
+            const self = this;
+            window.interact(this.panel)
+                .draggable({
+                    allowFrom: '.chat-header-drag',
+                    ignoreFrom: 'button, select, input, textarea, a, .btn, .form-check-input, .btn-msg-copy, .btn-msg-tts, .btn-window-action',
+                    modifiers: [
+                        window.interact.modifiers.restrictRect({
+                            restriction: function() {
+                                return {
+                                    top: 75,
+                                    left: 10,
+                                    right: window.innerWidth - 10,
+                                    bottom: window.innerHeight - 10
+                                };
+                            },
+                            endOnly: false
+                        })
+                    ],
+                    listeners: {
+                        move(event) {
+                            self.state.x += event.dx;
+                            self.state.y += event.dy;
+                            self.panel.style.left = `${self.state.x}px`;
+                            self.panel.style.top = `${self.state.y}px`;
+                        },
+                        end() {
+                            self.savePreferences();
+                        }
+                    }
+                })
+                .resizable({
+                    edges: { right: true, bottom: true },
+                    modifiers: [
+                        window.interact.modifiers.restrictSize({
+                            min: { width: 340, height: 420 },
+                            max: {
+                                width: () => Math.min(850, window.innerWidth - 30),
+                                height: () => window.innerHeight - 90
+                            }
+                        }),
+                        window.interact.modifiers.restrictEdges({
+                            outer: 'window',
+                            endOnly: true
+                        })
+                    ],
+                    listeners: {
+                        move(event) {
+                            self.state.width = event.rect.width;
+                            self.state.height = event.rect.height;
+                            self.panel.style.width = `${event.rect.width}px`;
+                            self.panel.style.height = `${event.rect.height}px`;
+                        },
+                        end() {
+                            self.savePreferences();
+                        }
+                    }
+                });
+        },
+
+        updateButtonStates(mode) {
+            if (this.dockBtn) {
+                const icon = this.dockBtn.querySelector('i');
+                if (mode === 'floating' || mode === 'maximized') {
+                    if (icon) icon.className = 'bi bi-layout-sidebar-inset-reverse';
+                    this.dockBtn.setAttribute('title', 'Dock assistant to sidebar');
+                    this.dockBtn.setAttribute('aria-label', 'Dock assistant to sidebar');
+                } else {
+                    if (icon) icon.className = 'bi bi-box-arrow-up-right';
+                    this.dockBtn.setAttribute('title', 'Undock assistant to floating window');
+                    this.dockBtn.setAttribute('aria-label', 'Undock assistant to floating window');
+                }
+            }
+
+            if (this.maximizeBtn) {
+                const icon = this.maximizeBtn.querySelector('i');
+                if (mode === 'maximized') {
+                    if (icon) icon.className = 'bi bi-fullscreen-exit';
+                    this.maximizeBtn.setAttribute('title', 'Restore window size');
+                    this.maximizeBtn.setAttribute('aria-label', 'Restore window size');
+                } else {
+                    if (icon) icon.className = 'bi bi-arrows-fullscreen';
+                    this.maximizeBtn.setAttribute('title', 'Maximize assistant window');
+                    this.maximizeBtn.setAttribute('aria-label', 'Maximize assistant window');
+                }
+            }
+        },
+
+        restoreFromMinimized() {
+            this.setMode(this.state.previousMode === 'docked' ? 'docked' : 'floating');
+        },
+
+        resetLayout() {
+            this.state.x = null;
+            this.state.y = null;
+            this.state.width = 440;
+            this.state.height = 620;
+            this.setMode('docked');
+            try {
+                localStorage.removeItem(PREFS_KEY);
+            } catch (e) {}
+        }
+    };
+
+    layoutManager.init();
+});
+</script>
+{% endblock %}
