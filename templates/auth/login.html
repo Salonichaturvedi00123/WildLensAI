@@ -1,371 +1,123 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}
-Login | WildLens AI
-{% endblock %}
-
-{% block css %}
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-<style>
-
-body{
-
-background:#edf2ec;
-
-font-family:Poppins,sans-serif;
-
-}
-
-.login-page{
-
-min-height:100vh;
-
-
-display:flex;
-
-align-items:center;
-
-padding:30px;
-
-}
-
-.login-wrapper{
-
-border-radius:35px;
-
-overflow:hidden;
-
-background:#fff;
-
-}
-
-.login-image{
-
-height:750px;
-
-background:url("{% static 'images/login.png' %}");
-
-background-size:cover;
-
-background-position:center;
-
-background-repeat:no-repeat;
-
-}
-
-.login-card{
-
-height:750px;
-
-display:flex;
-
-flex-direction:column;
-
-justify-content:center;
-
-padding:60px;
-
-}
-
-.logo{
-
-width:200px;
-
-margin:auto;
-
-display:block;
-
-
-}
-
-.login-card h1{
-
-text-align:center;
-
-font-size:48px;
-
-font-weight:700;
-
-margin-bottom:10px;
-
-}
-
-.login-card p{
-
-text-align:center;
-
-color:#666;
-
-margin-bottom:40px;
-
-}
-
-.input-group-text{
-
-background:#fff;
-
-border:1px solid #ddd;
-
-}
-
-.form-control{
-
-height:58px;
-
-border:1px solid #ddd;
-
-border-left:none;
-
-}
-
-.form-control:focus{
-
-box-shadow:none;
-
-border-color:#198754;
-
-}
-
-.eye{
-
-cursor:pointer;
-
-}
-
-.btn-success{
-
-height:58px;
-
-font-size:22px;
-
-font-weight:600;
-
-border-radius:12px;
-
-}
-
-.divider{
-
-display:flex;
-
-align-items:center;
-
-margin:35px 0;
-
-}
-
-.divider::before{
-
-content:"";
-
-flex:1;
-
-height:1px;
-
-background:#ddd;
-
-}
-
-.divider span{
-
-margin:0 15px;
-
-color:#666;
-
-}
-
-.divider::after{
-
-content:"";
-
-flex:1;
-
-height:1px;
-
-background:#ddd;
-
-}
-
-.signup{
-
-text-align:center;
-
-font-size:18px;
-
-}
-
-.signup a{
-
-text-decoration:none;
-
-font-weight:700;
-
-color:#2e7d32;
-
-}
-
-@media(max-width:992px){
-
-.login-image{
-
-display:none;
-
-}
-
-.login-card{
-
-height:auto;
-
-padding:40px;
-
-}
-
-.login-card h1{
-
-font-size:38px;
-
-}
-
-}
-</style>
-
-{% endblock %}
+{% block title %}Login | WildLens AI{% endblock %}
 
 {% block content %}
-
-<section class="login-page">
-
-<div class="container-fluid">
-
-<div class="row login-wrapper shadow">
-
-    <!-- Left Image -->
-
-    <div class="col-lg-7 p-0">
-
-        <div class="login-image"></div>
-
-    </div>
-
-    <!-- Right -->
-
-    <div class="col-lg-5 p-0">
-
-        <div class="login-card">
-
-            <!-- logo -->
-
-            <img src="{% static 'images/logo.png' %}" class="logo">
-
-            <h1>Welcome Back!</h1>
-
-            <p>Login to your account</p>
-
-            <form method="POST">
-
-                {% csrf_token %}
-
-                <div class="input-group mb-3">
-
-                    <span class="input-group-text">
-                        <i class="bi bi-person"></i>
-                    </span>
-
-                    <input
-                    type="text"
-                    class="form-control"
-                    placeholder="Username"
-                    name="username">
-
+<div class="row justify-content-center py-4">
+    <div class="col-md-8 col-lg-6 col-xl-5">
+        <div class="card card-modern border-0 overflow-hidden shadow-lg">
+            <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, var(--brand-forest-dark) 0%, var(--brand-forest) 100%);">
+                <div class="upload-icon-circle mb-2" style="width: 60px; height: 60px; font-size: 1.6rem; background: rgba(255, 255, 255, 0.15); color: #ffffff;">
+                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
                 </div>
-
-                <div class="input-group mb-4">
-
-                    <span class="input-group-text">
-                        <i class="bi bi-lock"></i>
-                    </span>
-
-                    <input
-                    type="password"
-                    class="form-control"
-                    placeholder="Password"
-                    id="password"
-                    name="password">
-
-                    <span class="input-group-text eye"
-                    onclick="togglePassword()">
-
-                        <i class="bi bi-eye" id="eye"></i>
-
-                    </span>
-
-                </div>
-
-                <button class="btn btn-success w-100 btn-lg">
-
-                    Login
-
-                </button>
-
-            </form>
-
-            <div class="divider">
-                <span>or</span>
+                <h3 class="fw-bold mb-1">Welcome Back</h3>
+                <p class="text-white-50 small mb-0">Sign in to your WildLens AI account</p>
             </div>
 
-            <p class="signup">
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    {% csrf_token %}
 
-                Don't have an account?
+                    {% if next %}
+                        <input type="hidden" name="next" value="{{ next }}">
+                    {% endif %}
 
-                <a href="{% url 'register' %}">
-                    Sign Up
-                </a>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0">
+                                <i class="bi bi-person" aria-hidden="true"></i>
+                            </span>
+                            <input
+                                type="text"
+                                class="form-control border-start-0 ps-0"
+                                placeholder="Enter your username"
+                                name="username"
+                                required
+                                autocomplete="username"
+                                aria-label="Username">
+                        </div>
+                    </div>
 
-            </p>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0">
+                                <i class="bi bi-lock" aria-hidden="true"></i>
+                            </span>
+                            <input
+                                type="password"
+                                class="form-control border-start-0 border-end-0 ps-0"
+                                placeholder="Enter your password"
+                                id="loginPassword"
+                                name="password"
+                                required
+                                autocomplete="current-password"
+                                aria-label="Password">
+                            <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePasswordBtn" aria-label="Toggle password visibility">
+                                <i class="bi bi-eye" id="eyeIcon" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
 
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label small text-muted" for="rememberMe">
+                                Remember me
+                            </label>
+                        </div>
+                        <a href="{% url 'forgot_password' %}" class="small text-decoration-none text-forest fw-semibold">
+                            Forgot password?
+                        </a>
+                    </div>
+
+                    <button type="submit" class="btn btn-forest w-100 py-3 fw-bold shadow-sm">
+                        <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i> Sign In
+                    </button>
+                </form>
+
+                <div class="d-flex align-items-center my-4">
+                    <hr class="flex-grow-1 my-0">
+                    <span class="px-3 text-muted small">or</span>
+                    <hr class="flex-grow-1 my-0">
+                </div>
+
+                <div class="text-center">
+                    <p class="small text-muted mb-0">
+                        Don't have an account yet?
+                        <a href="{% url 'register' %}" class="text-success fw-bold text-decoration-none">
+                            Register (Get 5 Free Credits)
+                        </a>
+                    </p>
+                </div>
+            </div>
         </div>
-
     </div>
-
 </div>
+{% endblock %}
 
-</div>
-
-</section>
-
+{% block js %}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('togglePasswordBtn');
+    const passwordInput = document.getElementById('loginPassword');
+    const eyeIcon = document.getElementById('eyeIcon');
 
-function togglePassword(){
-
-let password=document.getElementById("password");
-
-let eye=document.getElementById("eyeIcon");
-
-if(password.type==="password"){
-
-password.type="text";
-
-eye.classList.remove("bi-eye");
-
-eye.classList.add("bi-eye-slash");
-
-}
-
-else{
-
-password.type="password";
-
-eye.classList.remove("bi-eye-slash");
-
-eye.classList.add("bi-eye");
-
-}
-
-}
-
+    if (toggleBtn && passwordInput && eyeIcon) {
+        toggleBtn.addEventListener('click', function() {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('bi-eye');
+                eyeIcon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('bi-eye-slash');
+                eyeIcon.classList.add('bi-eye');
+            }
+        });
+    }
+});
 </script>
-
 {% endblock %}

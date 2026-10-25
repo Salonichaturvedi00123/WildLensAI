@@ -1,0 +1,258 @@
+{% extends 'admin/base.html' %}
+{% load i18n unfold %}
+
+{% block title %}
+    WildLensAI Analytics Dashboard | {{ site_title|default:_('Django site admin') }}
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-6">
+
+    <!-- Dashboard Header & Date Range Filter Bar -->
+    <div class="bg-white border border-base-200 dark:bg-base-900 dark:border-base-800 p-6 rounded-default shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="material-symbols-outlined text-primary-600 dark:text-primary-400 text-2xl">monitoring</span>
+                <h1 class="font-bold text-xl text-font-important-light dark:text-font-important-dark">
+                    WildLensAI Analytics &amp; Operations Dashboard
+                </h1>
+            </div>
+            <p class="text-sm text-font-subtle-light dark:text-font-subtle-dark">
+                Real-time SQLite analytics across users, AI predictions, conversations, and payment volumes.
+            </p>
+        </div>
+
+        <!-- Date Range Filter Buttons -->
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-font-subtle-light dark:text-font-subtle-dark uppercase tracking-wider mr-1">Period:</span>
+            <div class="inline-flex rounded-default border border-base-200 dark:border-base-700 bg-base-50 dark:bg-base-800 p-1">
+                <a href="?period=7d"
+                   class="px-3 py-1.5 text-xs font-medium rounded-default transition-colors {% if kpi.period == '7d' %}bg-white dark:bg-base-900 text-primary-600 dark:text-primary-400 font-semibold shadow-xs{% else %}text-font-default-light dark:text-font-default-dark hover:text-primary-600{% endif %}">
+                    Last 7 Days
+                </a>
+                <a href="?period=30d"
+                   class="px-3 py-1.5 text-xs font-medium rounded-default transition-colors {% if kpi.period == '30d' %}bg-white dark:bg-base-900 text-primary-600 dark:text-primary-400 font-semibold shadow-xs{% else %}text-font-default-light dark:text-font-default-dark hover:text-primary-600{% endif %}">
+                    Last 30 Days
+                </a>
+                <a href="?period=all"
+                   class="px-3 py-1.5 text-xs font-medium rounded-default transition-colors {% if kpi.period == 'all' %}bg-white dark:bg-base-900 text-primary-600 dark:text-primary-400 font-semibold shadow-xs{% else %}text-font-default-light dark:text-font-default-dark hover:text-primary-600{% endif %}">
+                    All Time
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Mode Notice Banner -->
+    <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 p-4 rounded-default flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-xl">shield_alert</span>
+            <div class="text-xs text-amber-800 dark:text-amber-300">
+                <strong>Razorpay Test Mode Active:</strong> Payment amounts represent simulated college project testing volumes, not live commercial revenue.
+            </div>
+        </div>
+        <span class="text-xs font-bold uppercase tracking-wider bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 px-2.5 py-1 rounded">
+            Sandbox Environment
+        </span>
+    </div>
+
+    <!-- KPI Metric Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Card 1: Users -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-5 rounded-default shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-font-subtle-light dark:text-font-subtle-dark mb-2">
+                <span class="text-xs uppercase font-semibold tracking-wider">Registered Users</span>
+                <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-xl">people</span>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-font-important-light dark:text-font-important-dark">
+                    {{ kpi.total_users }}
+                </div>
+                <div class="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-1">
+                    +{{ kpi.new_users_period }} new in {{ kpi.period_label }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Species Identifications -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-5 rounded-default shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-font-subtle-light dark:text-font-subtle-dark mb-2">
+                <span class="text-xs uppercase font-semibold tracking-wider">Identifications</span>
+                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400 text-xl">pets</span>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-font-important-light dark:text-font-important-dark">
+                    {{ kpi.predictions_period }}
+                </div>
+                <div class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium mt-1">
+                    {{ kpi.identified_count }} identified ({{ kpi.identified_rate }}% success)
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: AI Conversations -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-5 rounded-default shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-font-subtle-light dark:text-font-subtle-dark mb-2">
+                <span class="text-xs uppercase font-semibold tracking-wider">AI Assistant Chats</span>
+                <span class="material-symbols-outlined text-purple-600 dark:text-purple-400 text-xl">forum</span>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-font-important-light dark:text-font-important-dark">
+                    {{ kpi.conversations_period }}
+                </div>
+                <div class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium mt-1">
+                    {{ kpi.total_messages }} total dialogue messages
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Payments & Credits -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-5 rounded-default shadow-xs flex flex-col justify-between">
+            <div class="flex items-center justify-between text-font-subtle-light dark:text-font-subtle-dark mb-2">
+                <span class="text-xs uppercase font-semibold tracking-wider">Credits Purchased</span>
+                <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-xl">account_balance_wallet</span>
+            </div>
+            <div>
+                <div class="text-3xl font-bold text-font-important-light dark:text-font-important-dark">
+                    {{ kpi.credits_purchased }}
+                </div>
+                <div class="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
+                    ₹{{ kpi.test_volume_rupees|floatformat:2 }} (Test Volume)
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Secondary KPI Row (Detailed Statuses) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-4 rounded-default shadow-xs flex items-center justify-between">
+            <div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium d-block">Confirmed Species</span>
+                <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ kpi.identified_count }}</span>
+            </div>
+            <span class="material-symbols-outlined text-emerald-500 text-2xl">check_circle</span>
+        </div>
+
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-4 rounded-default shadow-xs flex items-center justify-between">
+            <div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium d-block">Uncertain Specimens</span>
+                <span class="text-xl font-bold text-amber-600 dark:text-amber-400">{{ kpi.uncertain_count }}</span>
+            </div>
+            <span class="material-symbols-outlined text-amber-500 text-2xl">help_outline</span>
+        </div>
+
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-4 rounded-default shadow-xs flex items-center justify-between">
+            <div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium d-block">Captured Test Orders</span>
+                <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ kpi.successful_payments }}</span>
+            </div>
+            <span class="material-symbols-outlined text-emerald-500 text-2xl">task_alt</span>
+        </div>
+
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-4 rounded-default shadow-xs flex items-center justify-between">
+            <div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium d-block">Pending / Incomplete</span>
+                <span class="text-xl font-bold text-font-subtle-light dark:text-font-subtle-dark">{{ kpi.pending_payments }}</span>
+            </div>
+            <span class="material-symbols-outlined text-base-400 text-2xl">hourglass_empty</span>
+        </div>
+    </div>
+
+    <!-- Analytics Graphs (Chart.js via Unfold Canvas) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Graph 1: User Registrations -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-6 rounded-default shadow-xs flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400">trending_up</span>
+                    <h3 class="font-semibold text-base text-font-important-light dark:text-font-important-dark">
+                        User Registrations Trend
+                    </h3>
+                </div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium">{{ kpi.period_label }}</span>
+            </div>
+            <div class="relative w-full h-64">
+                <canvas class="chart" data-type="line" data-value="{{ charts.user_registrations }}" height="260"></canvas>
+            </div>
+        </div>
+
+        <!-- Graph 2: Animal Identifications -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-6 rounded-default shadow-xs flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">camera_alt</span>
+                    <h3 class="font-semibold text-base text-font-important-light dark:text-font-important-dark">
+                        Animal Identifications Volume
+                    </h3>
+                </div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium">{{ kpi.period_label }}</span>
+            </div>
+            <div class="relative w-full h-64">
+                <canvas class="chart" data-type="line" data-value="{{ charts.animal_predictions }}" height="260"></canvas>
+            </div>
+        </div>
+
+        <!-- Graph 3: Popular Animals -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-6 rounded-default shadow-xs flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400">leaderboard</span>
+                    <h3 class="font-semibold text-base text-font-important-light dark:text-font-important-dark">
+                        Top Identified Wildlife Species
+                    </h3>
+                </div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium">Most Frequent</span>
+            </div>
+            <div class="relative w-full h-64">
+                <canvas class="chart" data-type="bar" data-value="{{ charts.popular_animals }}" height="260"></canvas>
+            </div>
+        </div>
+
+        <!-- Graph 4: Payment Activity -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-6 rounded-default shadow-xs flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-600 dark:text-amber-400">payments</span>
+                    <h3 class="font-semibold text-base text-font-important-light dark:text-font-important-dark">
+                        Razorpay Test Payment Activity
+                    </h3>
+                </div>
+                <span class="text-xs text-amber-600 dark:text-amber-400 font-medium">Sandbox Mode</span>
+            </div>
+            <div class="relative w-full h-64">
+                <canvas class="chart" data-type="bar" data-value="{{ charts.payment_activity }}" height="260"></canvas>
+            </div>
+        </div>
+
+        <!-- Graph 5: Identification Outcomes Distribution -->
+        <div class="bg-white dark:bg-base-900 border border-base-200 dark:border-base-800 p-6 rounded-default shadow-xs flex flex-col lg:col-span-2">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">pie_chart</span>
+                    <h3 class="font-semibold text-base text-font-important-light dark:text-font-important-dark">
+                        Identification Outcomes Breakdown
+                    </h3>
+                </div>
+                <span class="text-xs text-font-subtle-light dark:text-font-subtle-dark font-medium">Categorical Distribution</span>
+            </div>
+            <div class="relative w-full h-56">
+                <canvas class="chart" data-type="bar" data-value="{{ charts.identification_outcomes }}" height="220"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Management Directory -->
+    <div class="mt-4">
+        <h2 class="font-bold text-lg text-font-important-light dark:text-font-important-dark mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary-600 dark:text-primary-400">folder_open</span>
+            System Applications &amp; Records Management
+        </h2>
+        {% include "unfold/helpers/app_list_default.html" with show_changelinks=True %}
+    </div>
+
+</div>
+{% endblock %}
+

@@ -10,27 +10,46 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from .env file
+load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6g9#er-6(pe$fmz%njtc6#6k59jk)-@smb0r&y30mh36-#=d$x'
+SECRET_KEY = os.getenv(
+    'SECRET_KEY',
+    'django-insecure-dev-fallback-key-for-local-wildlens'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+    if host.strip()
+]
+
+# Trusted origins for CSRF protection when testing via local LAN or HTTPS tunnels
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'unfold',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,7 +57,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'animal',
-    'transactions'
+    'transactions',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +75,7 @@ ROOT_URLCONF = 'WildLensAI.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['templates'],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -80,6 +99,12 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+
+# Default primary key field type
+# https://docs.djangoproject.com/en/6.0/ref/settings/#default-auto-field
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Password validation
@@ -120,5 +145,141 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+
+# Media files (User uploaded images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Authentication redirects
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'login'
+
+# Razorpay Payment Gateway Configuration (Test Mode by default)
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_placeholder_key")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "placeholder_secret")
+RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
+RAZORPAY_MODE = os.getenv("RAZORPAY_MODE", "test").lower()
+
+# Django Unfold Configuration
+UNFOLD = {
+    "SITE_TITLE": "WildLensAI Admin",
+    "SITE_HEADER": "WildLensAI Management Console",
+    "SITE_SUBHEADER": "Agentic Wildlife Identification & Digital Wallet",
+    "SITE_URL": "/",
+    "SITE_SYMBOL": "pets",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "DASHBOARD_CALLBACK": "transactions.dashboard.dashboard_callback",
+    "COLORS": {
+        "primary": {
+            "50": "oklch(97.7% .014 150)",
+            "100": "oklch(94.6% .033 150)",
+            "200": "oklch(90.2% .063 150)",
+            "300": "oklch(82.7% .119 150)",
+            "400": "oklch(71.4% .18 150)",
+            "500": "oklch(55.8% .18 150)",
+            "600": "oklch(45.6% .16 150)",
+            "700": "oklch(38.0% .14 150)",
+            "800": "oklch(30.2% .11 150)",
+            "900": "oklch(24.5% .08 150)",
+            "950": "oklch(18.0% .06 150)",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": "Navigation",
+                "separator": False,
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": "Dashboard",
+                        "icon": "dashboard",
+                        "link": "/admin/",
+                    },
+                ],
+            },
+            {
+                "title": "Wildlife & AI",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Animal Predictions",
+                        "icon": "pets",
+                        "link": "/admin/animal/animalprediction/",
+                    },
+                    {
+                        "title": "AI Conversations",
+                        "icon": "forum",
+                        "link": "/admin/animal/wildlifeconversation/",
+                    },
+                    {
+                        "title": "Chat Messages",
+                        "icon": "chat",
+                        "link": "/admin/animal/wildlifemessage/",
+                    },
+                    {
+                        "title": "Contact Inquiries",
+                        "icon": "mail",
+                        "link": "/admin/animal/contact/",
+                    },
+                ],
+            },
+            {
+                "title": "Payments & Wallet",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Payment Orders",
+                        "icon": "payments",
+                        "link": "/admin/transactions/paymentorder/",
+                    },
+                    {
+                        "title": "Credit Plans",
+                        "icon": "sell",
+                        "link": "/admin/transactions/creditplan/",
+                    },
+                    {
+                        "title": "Wallet Transactions",
+                        "icon": "account_balance_wallet",
+                        "link": "/admin/transactions/wallettransaction/",
+                    },
+                    {
+                        "title": "Webhook Events",
+                        "icon": "webhook",
+                        "link": "/admin/transactions/razorpaywebhookevent/",
+                    },
+                ],
+            },
+            {
+                "title": "Authentication & Users",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Users",
+                        "icon": "people",
+                        "link": "/admin/auth/user/",
+                    },
+                    {
+                        "title": "User Profiles",
+                        "icon": "badge",
+                        "link": "/admin/transactions/profile/",
+                    },
+                    {
+                        "title": "User Groups",
+                        "icon": "groups",
+                        "link": "/admin/auth/group/",
+                    },
+                ],
+            },
+        ],
+    },
+}
+
+

@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account | WildLens AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-9 col-lg-7 col-xl-6">
+        <div class="card card-modern border-0 overflow-hidden shadow-lg">
+            <div class="card-header text-white text-center py-4" style="background: linear-gradient(135deg, var(--brand-forest-dark) 0%, var(--brand-forest) 100%);">
+                <div class="upload-icon-circle mb-2" style="width: 60px; height: 60px; font-size: 1.6rem; background: rgba(255, 255, 255, 0.15); color: #ffffff;">
+                    <i class="bi bi-person-plus" aria-hidden="true"></i>
+                </div>
+                <h3 class="fw-bold mb-1">Create Your Account</h3>
+                <p class="text-white-50 small mb-0">Join WildLens AI &amp; receive 5 free discovery credits!</p>
+            </div>
+
+            <div class="card-body p-4 p-md-5">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-dark">First Name</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                placeholder="First name"
+                                name="first_name"
+                                autocomplete="given-name">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-dark">Last Name</label>
+                            <input
+                                type="text"
+                                class="form-control"
+                                placeholder="Last name"
+                                name="last_name"
+                                autocomplete="family-name">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Username <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0">
+                                <i class="bi bi-person" aria-hidden="true"></i>
+                            </span>
+                            <input
+                                type="text"
+                                class="form-control border-start-0 ps-0"
+                                placeholder="Choose a unique username"
+                                name="username"
+                                required
+                                autocomplete="username"
+                                aria-label="Username">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-dark">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted border-end-0">
+                                <i class="bi bi-envelope" aria-hidden="true"></i>
+                            </span>
+                            <input
+                                type="email"
+                                class="form-control border-start-0 ps-0"
+                                placeholder="name@example.com"
+                                name="email"
+                                autocomplete="email"
+                                aria-label="Email address">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-dark">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0">
+                                    <i class="bi bi-lock" aria-hidden="true"></i>
+                                </span>
+                                <input
+                                    type="password"
+                                    class="form-control border-start-0 ps-0"
+                                    placeholder="Min 6 characters"
+                                    name="password"
+                                    required
+                                    autocomplete="new-password"
+                                    aria-label="Password">
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-semibold text-dark">Confirm Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0">
+                                    <i class="bi bi-shield-check" aria-hidden="true"></i>
+                                </span>
+                                <input
+                                    type="password"
+                                    class="form-control border-start-0 ps-0"
+                                    placeholder="Repeat password"
+                                    name="confirm_password"
+                                    required
+                                    autocomplete="new-password"
+                                    aria-label="Confirm Password">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-forest w-100 py-3 fw-bold shadow-sm">
+                        <i class="bi bi-check2-circle me-2" aria-hidden="true"></i> Create Account &amp; Claim Credits
+                    </button>
+                </form>
+
+                <div class="d-flex align-items-center my-4">
+                    <hr class="flex-grow-1 my-0">
+                    <span class="px-3 text-muted small">or</span>
+                    <hr class="flex-grow-1 my-0">
+                </div>
+
+                <div class="text-center">
+                    <p class="small text-muted mb-0">
+                        Already have an account?
+                        <a href="{% url 'login' %}" class="text-success fw-bold text-decoration-none">
+                            Login Here
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

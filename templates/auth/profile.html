@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Account | WildLens AI{% endblock %}
+
+{% block content %}
+<!-- Profile Header Banner -->
+<div class="card card-modern border-0 text-white shadow-lg overflow-hidden mb-4" style="background: linear-gradient(135deg, var(--brand-forest-dark) 0%, var(--brand-forest) 100%);">
+    <div class="card-body p-4 p-md-5 d-flex flex-wrap align-items-center justify-content-between">
+        <div class="d-flex align-items-center mb-3 mb-md-0">
+            <div class="rounded-circle bg-white text-success d-flex align-items-center justify-content-center shadow-sm me-4" style="width: 76px; height: 76px;">
+                <i class="bi bi-person-circle fs-1" aria-hidden="true"></i>
+            </div>
+            <div>
+                <h2 class="fw-bold mb-1">{{ user.first_name|default:user.username }}'s Account</h2>
+                <p class="mb-0 text-white-50 small">
+                    <i class="bi bi-person me-1" aria-hidden="true"></i> @{{ user.username }} &nbsp;|&nbsp;
+                    <i class="bi bi-envelope me-1" aria-hidden="true"></i> {{ user.email|default:"No email set" }} &nbsp;|&nbsp;
+                    <i class="bi bi-calendar-check me-1" aria-hidden="true"></i> Member since {{ user.date_joined|date:"M d, Y" }}
+                </p>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'predict' %}" class="btn btn-warning fw-semibold text-dark shadow-sm">
+                <i class="bi bi-camera me-1" aria-hidden="true"></i> Identify an Animal
+            </a>
+            <form method="POST" action="{% url 'logout' %}" class="d-inline m-0">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-light" aria-label="Log out of WildLens AI">
+                    <i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i> Logout
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Discovery Credits Card -->
+    <div class="col-lg-5">
+        <div class="card card-modern h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="bi bi-stars text-success me-2" aria-hidden="true"></i> Your Discovery Credits
+                    </h5>
+                    <small class="text-muted" style="font-size: 0.75rem;">Digital Wallet &amp; Exploration Balance</small>
+                </div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Active</span>
+            </div>
+            <div class="card-body p-4 text-center">
+                <span class="text-muted small text-uppercase fw-semibold tracking-wider">Available Discovery Credits</span>
+                <h1 class="display-3 fw-bold text-success my-2">
+                    ₹{{ profile.wallet_balance|default:"0.00" }}
+                </h1>
+                <p class="text-muted small mb-4">Keep exploring the animal kingdom with credits for new wildlife discoveries.</p>
+
+                <div class="bg-light rounded-3 p-3 mb-4 text-start border">
+                    <div class="d-flex justify-content-between py-1 border-bottom">
+                        <span class="text-muted small">Total Animals Discovered</span>
+                        <span class="fw-bold text-dark">{{ profile.total_predictions }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1 border-bottom">
+                        <span class="text-muted small">Welcome Sign-up Bonus</span>
+                        <span class="fw-bold text-success">+5 Credits</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted small">Discovery Rate</span>
+                        <span class="fw-semibold text-dark">1 Credit / animal discovery</span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="{% url 'recharge' %}" class="btn btn-warning fw-bold text-dark py-2 shadow-sm">
+                        <i class="bi bi-lightning-charge-fill me-1" aria-hidden="true"></i> Add Credits
+                    </a>
+                    <a href="{% url 'predict' %}" class="btn btn-forest fw-semibold py-2">
+                        <i class="bi bi-camera me-1" aria-hidden="true"></i> Explore Another Animal
+                    </a>
+                    <a href="{% url 'history' %}" class="btn btn-outline-forest py-2">
+                        <i class="bi bi-collection me-1" aria-hidden="true"></i> My Discoveries
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Discoveries & Credit Plans -->
+    <div class="col-lg-7">
+        <div class="card card-modern h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                    <i class="bi bi-collection text-success me-2" aria-hidden="true"></i> Recent Discoveries
+                </h5>
+                <a href="{% url 'history' %}" class="btn btn-sm btn-outline-forest">View All</a>
+            </div>
+            <div class="card-body p-4">
+                {% if recent_predictions %}
+                <ul class="list-group list-group-flush mb-4">
+                    {% for pred in recent_predictions %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 bg-transparent">
+                        <div>
+                            <strong class="text-dark d-block">{{ pred.common_name }}</strong>
+                            <span class="small text-muted">{{ pred.created_at|date:"d M Y, h:i A" }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge {% if pred.identification_status == 'identified' %}badge-status-identified{% elif pred.identification_status == 'uncertain' %}badge-status-uncertain{% else %}badge-status-not_animal{% endif %} px-2 py-1">
+                                {{ pred.identification_status|title }}
+                            </span>
+                            <a href="{% url 'prediction_detail' pred.id %}" class="btn btn-sm btn-outline-forest" aria-label="View details for {{ pred.common_name }}">
+                                <i class="bi bi-compass me-1" aria-hidden="true"></i> View Discovery
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <div class="upload-icon-circle mb-2" style="width: 50px; height: 50px; font-size: 1.4rem;">
+                        <i class="bi bi-camera" aria-hidden="true"></i>
+                    </div>
+                    <p class="mb-0 small">No discoveries logged yet. Upload an animal photograph to start exploring.</p>
+                </div>
+                {% endif %}
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                        <i class="bi bi-lightning-charge-fill text-warning me-2" aria-hidden="true"></i> College Demo Wallet Recharge Plans (Razorpay Test Mode)
+                    </h6>
+                    <a href="{% url 'recharge' %}" class="btn btn-sm btn-outline-forest fw-semibold">
+                        View All Packages <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="row g-2">
+                    {% for plan in credit_plans|slice:":3" %}
+                    <div class="col-4">
+                        <div class="stat-pill text-center p-2 {% if forloop.counter == 2 %}border-success border-2 bg-success-subtle{% endif %}">
+                            <span class="small {% if forloop.counter == 2 %}text-success fw-bold{% else %}text-muted{% endif %} d-block">{{ plan.name }}</span>
+                            <strong class="text-success fs-5">₹{{ plan.price|floatformat:0 }}</strong>
+                            <span class="small text-muted d-block">{{ plan.credits }} credits</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-4">
+                        <div class="stat-pill text-center p-2">
+                            <span class="small text-muted d-block">Starter</span>
+                            <strong class="text-success fs-5">₹49</strong>
+                            <span class="small text-muted d-block">50 credits</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-pill text-center p-2 border-success border-2 bg-success-subtle">
+                            <span class="small text-success fw-bold d-block">Explorer Pack</span>
+                            <strong class="text-success fs-5">₹99</strong>
+                            <span class="small text-muted d-block">120 credits</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-pill text-center p-2">
+                            <span class="small text-muted d-block">Wildlife Pro</span>
+                            <strong class="text-success fs-5">₹199</strong>
+                            <span class="small text-muted d-block">300 credits</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-grid mt-3">
+                    <a href="{% url 'recharge' %}" class="btn btn-success fw-bold text-white shadow-sm">
+                        <i class="bi bi-shield-check me-1" aria-hidden="true"></i> Add Credits (Razorpay Test Mode)
+                    </a>
+                </div>
+
+                <div class="alert alert-light border small mt-3 mb-0 text-muted d-flex align-items-start">
+                    <i class="bi bi-info-circle text-primary fs-5 me-2 mt-1" aria-hidden="true"></i>
+                    <div>
+                        <strong>Test Payment:</strong> No real money will be charged. This is Razorpay Test Mode for exploring WildLens AI.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Wallet Transaction Ledger Card -->
+<div class="card card-modern overflow-hidden border-0 mb-4 shadow">
+    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center">
+                <i class="bi bi-journal-text text-success me-2" aria-hidden="true"></i> Transaction History
+            </h5>
+            <small class="text-muted">Discovery credits history &amp; ledger &middot; Balance records and credit additions</small>
+        </div>
+        <span class="badge bg-light text-muted border">
+            <i class="bi bi-shield-lock me-1" aria-hidden="true"></i> Verified Record
+        </span>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_transactions %}
+        <div class="table-responsive">
+            <table class="table table-modern align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Date &amp; Time</th>
+                        <th>Type</th>
+                        <th>Credits</th>
+                        <th>Balance After</th>
+                        <th>Description</th>
+                        <th class="pe-4 text-end">Related Discovery</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in recent_transactions %}
+                    <tr>
+                        <td class="ps-4 text-muted small">
+                            {{ tx.created_at|date:"d M Y, h:i A" }}
+                        </td>
+                        <td>
+                            {% if tx.transaction_type == 'credit_purchase' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-lightning-charge-fill me-1" aria-hidden="true"></i> Credits Added
+                                </span>
+                            {% elif tx.transaction_type == 'signup_bonus' %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-gift me-1" aria-hidden="true"></i> Welcome Bonus
+                                </span>
+                            {% elif tx.transaction_type == 'prediction_charge' %}
+                                <span class="badge bg-secondary-subtle text-secondary border">
+                                    <i class="bi bi-dash-circle me-1" aria-hidden="true"></i> Discovery
+                                </span>
+                            {% elif tx.transaction_type == 'admin_grant' %}
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                    <i class="bi bi-award me-1" aria-hidden="true"></i> Admin Grant
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border">
+                                    {{ tx.get_transaction_type_display }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tx.amount > 0 %}
+                                <span class="fw-bold text-success">+₹{{ tx.amount|floatformat:2 }}</span>
+                            {% else %}
+                                <span class="fw-bold text-dark">-₹{{ tx.amount|cut:"-"|floatformat:2 }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-semibold text-dark">
+                            ₹{{ tx.balance_after|floatformat:2 }}
+                        </td>
+                        <td class="small text-muted">
+                            {{ tx.description|default:"Transaction processed." }}
+                        </td>
+                        <td class="pe-4 text-end">
+                            {% if tx.prediction %}
+                                <a href="{% url 'prediction_detail' tx.prediction.id %}" class="btn btn-sm btn-outline-forest py-0 px-2">
+                                    <i class="bi bi-compass me-1" aria-hidden="true"></i> {{ tx.prediction.common_name|truncatechars:18 }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">&mdash;</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+            <i class="bi bi-receipt fs-2 text-muted d-block mb-2" aria-hidden="true"></i>
+            <p class="small mb-0">No transactions recorded yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="{% static 'js/wallet_checkout.js' %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}

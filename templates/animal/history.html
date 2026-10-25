@@ -1,127 +1,159 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}
-Prediction History | WildLens AI
-{% endblock %}
+{% block title %}My Discoveries | WildLens AI{% endblock %}
 
 {% block content %}
-
-<div class="container py-5">
-
-    <!-- Heading -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="fw-bold text-success">Prediction History</h2>
-            <p class="text-muted mb-0">
-                View all your previous animal species predictions.
-            </p>
-        </div>
-
-        <a href="{% url 'predict' %}" class="btn btn-success">
-            + New Prediction
-        </a>
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold text-success mb-1">My Discoveries</h2>
+        <p class="text-muted mb-0">
+            Revisit all the animals you have discovered, explore their characteristics, and continue learning.
+        </p>
     </div>
 
-    {% if predictions %}
-
-    <div class="card shadow border-0 rounded-4">
-
-        <div class="card-body">
-
-            <div class="table-responsive">
-
-                <table class="table table-hover align-middle">
-
-                    <thead class="table-success">
-
-                        <tr>
-                            <th>#</th>
-                            <th>Image</th>
-                            <th>Species</th>
-                            <th>Confidence</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {% for item in predictions %}
-
-                        <tr>
-
-                            <td>{{ forloop.counter }}</td>
-
-                            <td>
-                                <img src="{{ item.image.url }}"
-                                     width="80"
-                                     height="80"
-                                     class="rounded shadow-sm"
-                                     style="object-fit:cover;">
-                            </td>
-
-                            <td>
-                                <strong>{{ item.species }}</strong>
-                            </td>
-
-                            <td>
-                                {{ item.confidence }}%
-                            </td>
-
-                            <td>
-                                {{ item.created_at|date:"d M Y, h:i A" }}
-                            </td>
-
-                            <td>
-                                <span class="badge bg-success">
-                                    Completed
-                                </span>
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-        </div>
-
-    </div>
-
-    {% else %}
-
-    <div class="card shadow border-0 rounded-4">
-
-        <div class="card-body text-center py-5">
-
-            <img src="{% static 'images/history.png' %}"
-                 width="100"
-                 class="mb-4">
-
-            <h3>No Predictions Yet</h3>
-
-            <p class="text-muted">
-                You haven't identified any animal species yet.
-            </p>
-
-            <a href="{% url 'predict' %}" class="btn btn-success">
-                Make Your First Prediction
-            </a>
-
-        </div>
-
-    </div>
-
-    {% endif %}
-
+    <a href="{% url 'predict' %}" class="btn btn-forest mt-3 mt-md-0 shadow-sm">
+        <i class="bi bi-camera me-1" aria-hidden="true"></i> Identify an Animal
+    </a>
 </div>
 
-{% endblock %}
+{% if predictions %}
+<!-- Quick Stat Summary Row -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-md-4">
+        <div class="stat-pill d-flex align-items-center">
+            <div class="upload-icon-circle me-3" style="width: 46px; height: 46px; font-size: 1.25rem; margin: 0;">
+                <i class="bi bi-collection" aria-hidden="true"></i>
+            </div>
+            <div>
+                <span class="text-muted small d-block">Total Discoveries</span>
+                <span class="fs-4 fw-bold text-dark">{{ predictions|length }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-md-4">
+        <div class="stat-pill d-flex align-items-center">
+            <div class="upload-icon-circle me-3" style="width: 46px; height: 46px; font-size: 1.25rem; margin: 0; background-color: #dcfce7; color: #15803d;">
+                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+            </div>
+            <div>
+                <span class="text-muted small d-block">Identified Species</span>
+                <span class="fs-4 fw-bold text-success">
+                    Active Archive
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-12 col-md-4">
+        <div class="stat-pill d-flex align-items-center">
+            <div class="upload-icon-circle me-3" style="width: 46px; height: 46px; font-size: 1.25rem; margin: 0; background-color: #fef3c7; color: #b45309;">
+                <i class="bi bi-wallet2" aria-hidden="true"></i>
+            </div>
+            <div>
+                <span class="text-muted small d-block">Discovery Rate</span>
+                <span class="fs-4 fw-bold text-warning-emphasis">1 Credit / animal</span>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- History Table Card -->
+<div class="card card-modern overflow-hidden border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-modern align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>Photo</th>
+                        <th>Discovered Animal</th>
+                        <th>Scientific Name</th>
+                        <th>Status</th>
+                        <th>Credits</th>
+                        <th>Discovered On</th>
+                        <th class="pe-4 text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in predictions %}
+                    <tr>
+                        <td class="ps-4 text-muted small">{{ forloop.counter }}</td>
+                        <td>
+                            {% if item.uploaded_image %}
+                                <img src="{{ item.uploaded_image.url }}"
+                                     width="60"
+                                     height="60"
+                                     class="rounded-3 shadow-sm border"
+                                     style="object-fit: cover;"
+                                     alt="{{ item.common_name }}">
+                            {% elif item.image %}
+                                <img src="{{ item.image.url }}"
+                                     width="60"
+                                     height="60"
+                                     class="rounded-3 shadow-sm border"
+                                     style="object-fit: cover;"
+                                     alt="{{ item.common_name }}">
+                            {% else %}
+                                <div class="bg-light rounded-3 d-flex align-items-center justify-content-center text-muted" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-image" aria-hidden="true"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong class="text-dark d-block">{{ item.common_name }}</strong>
+                            {% if item.visual_clues %}
+                                <span class="small text-muted">{{ item.visual_clues|length }} visual clues recorded</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.scientific_name %}
+                                <span class="text-muted fst-italic">{{ item.scientific_name }}</span>
+                            {% else %}
+                                <span class="text-muted small">Not verified</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if item.identification_status == 'identified' %}badge-status-identified{% elif item.identification_status == 'uncertain' %}badge-status-uncertain{% else %}badge-status-not_animal{% endif %} px-2 py-1">
+                                <i class="bi {% if item.identification_status == 'identified' %}bi-check2-circle{% elif item.identification_status == 'uncertain' %}bi-question-circle{% else %}bi-info-circle{% endif %} me-1" aria-hidden="true"></i>
+                                {{ item.identification_status|default:"Identified"|title }}
+                            </span>
+                        </td>
+                        <td class="small text-muted">
+                            {{ item.credit_used|floatformat:0|default:"1" }} cr
+                        </td>
+                        <td class="small text-muted">
+                            {{ item.created_at|date:"d M Y, h:i A" }}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <a href="{% url 'prediction_detail' item.id %}" class="btn btn-outline-forest btn-sm">
+                                <i class="bi bi-compass me-1" aria-hidden="true"></i> View Discovery
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="card card-modern text-center py-5 border-0">
+    <div class="card-body py-5">
+        <div class="upload-icon-circle mb-3" style="width: 80px; height: 80px; font-size: 2.2rem;">
+            <i class="bi bi-journal-album" aria-hidden="true"></i>
+        </div>
+
+        <h3 class="fw-bold text-dark">No Discoveries Yet</h3>
+        <p class="text-muted mx-auto mb-4" style="max-width: 440px;">
+            You haven't discovered any animals yet. Upload a photo from your zoo visit or nature walk to get started!
+        </p>
+
+        <a href="{% url 'predict' %}" class="btn btn-forest btn-lg px-4 shadow-sm">
+            <i class="bi bi-camera me-2" aria-hidden="true"></i> Identify an Animal
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
