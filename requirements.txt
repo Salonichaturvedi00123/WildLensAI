@@ -8,3 +8,4 @@ markdown-it-py>=3.0.0
 razorpay>=1.4.0
 django-unfold>=0.110.0
 gunicorn 
+whitenoise
