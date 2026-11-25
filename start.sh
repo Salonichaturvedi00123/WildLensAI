@@ -9,7 +9,12 @@ if [[ "${DJANGO_ENV:-${APP_ENV:-}}" != "production" ]]; then
     exit 1
 fi
 
-STORAGE_MODE="${STORAGE_MODE:-persistent}"
+if [[ -z "${DATABASE_URL:-}" ]]; then
+    echo "DATABASE_URL must be set to your Neon PostgreSQL connection string." >&2
+    exit 1
+fi
+
+STORAGE_MODE="${STORAGE_MODE:-ephemeral}"
 case "$STORAGE_MODE" in
     persistent)
         if [[ "${DATA_DIR:-}" != "/var/data" ]]; then
@@ -19,13 +24,11 @@ case "$STORAGE_MODE" in
         REQUIRE_MOUNT="1"
         ;;
     ephemeral)
-        if [[ "${DATA_DIR:-}" != "/tmp/wildlens" ]]; then
-            echo "DATA_DIR must be /tmp/wildlens for ephemeral storage." >&2
-            exit 1
-        fi
+        DATA_DIR="${DATA_DIR:-/tmp/wildlens}"
+        export DATA_DIR
         mkdir -p "$DATA_DIR"
         REQUIRE_MOUNT="0"
-        echo "WARNING: Ephemeral storage is enabled; database and media may be lost on restart or deploy." >&2
+        echo "INFO: Using ephemeral media storage at $DATA_DIR (database is hosted on Neon PostgreSQL)." >&2
         ;;
     *)
         echo "STORAGE_MODE must be persistent or ephemeral." >&2
@@ -58,13 +61,10 @@ except OSError as exc:
     raise SystemExit(f"Render Persistent Disk is not writable: {exc}") from exc
 PY
 
-mkdir -p "$DATA_DIR/media" "$DATA_DIR/backups"
+mkdir -p "$DATA_DIR/media"
 python manage.py migrate --noinput
 
-WORKERS=2
-if [[ "$STORAGE_MODE" == "ephemeral" ]]; then
-    WORKERS=1
-fi
+WORKERS="${WEB_CONCURRENCY:-2}"
 
 exec gunicorn WildLensAI.wsgi:application \
     --bind "0.0.0.0:${PORT}" \

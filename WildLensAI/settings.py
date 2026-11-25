@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import dj_database_url
 from dotenv import load_dotenv
 from django.core.exceptions import ImproperlyConfigured
 
@@ -95,7 +96,7 @@ if IS_PRODUCTION:
 
 STORAGE_MODE = os.getenv(
     'STORAGE_MODE',
-    'persistent' if IS_PRODUCTION else 'local',
+    'ephemeral' if IS_PRODUCTION else 'local',
 ).strip().lower()
 
 if IS_PRODUCTION:
@@ -103,16 +104,15 @@ if IS_PRODUCTION:
         raise ImproperlyConfigured(
             "Production STORAGE_MODE must be 'persistent' or 'ephemeral'."
         )
-    configured_data_dir = os.getenv('DATA_DIR', '').strip()
-    expected_data_dir = (
-        '/var/data' if STORAGE_MODE == 'persistent' else '/tmp/wildlens'
-    )
-    if configured_data_dir != expected_data_dir:
+    default_data_dir = '/var/data' if STORAGE_MODE == 'persistent' else '/tmp/wildlens'
+    configured_data_dir = os.getenv('DATA_DIR', default_data_dir).strip() or default_data_dir
+    if STORAGE_MODE == 'persistent' and configured_data_dir != '/var/data':
         raise ImproperlyConfigured(
-            f"Production DATA_DIR must be {expected_data_dir} for "
-            f"STORAGE_MODE={STORAGE_MODE}."
+            "Production DATA_DIR must be /var/data for STORAGE_MODE=persistent."
         )
     DATA_DIR = Path(configured_data_dir)
+    if STORAGE_MODE == 'ephemeral':
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
     if not DATA_DIR.is_dir() or not os.access(DATA_DIR, os.W_OK):
         raise ImproperlyConfigured(
             f"Production DATA_DIR must exist and be writable for "
@@ -125,33 +125,20 @@ else:
     DATA_DIR = Path(configured_data_dir).expanduser() if configured_data_dir else BASE_DIR
 
 if APP_ENV == 'build':
-    DATABASE_PATH = DATA_DIR / 'db.sqlite3'
     MEDIA_ROOT = DATA_DIR / 'media'
 elif IS_PRODUCTION:
-    default_database_path = DATA_DIR / 'db.sqlite3'
-    configured_database_path = os.getenv('SQLITE_DB_PATH', '').strip()
-    DATABASE_PATH = (
-        Path(configured_database_path).expanduser()
-        if configured_database_path else default_database_path
-    )
     default_media_root = DATA_DIR / 'media'
     configured_media_root = os.getenv('MEDIA_ROOT', '').strip()
     MEDIA_ROOT = (
         Path(configured_media_root).expanduser()
         if configured_media_root else default_media_root
     )
-
-    if DATABASE_PATH.resolve() != default_database_path.resolve():
-        raise ImproperlyConfigured(
-            f"Production SQLITE_DB_PATH must be {default_database_path}."
-        )
-    if MEDIA_ROOT.resolve() != default_media_root.resolve():
-        raise ImproperlyConfigured(
-            f"Production MEDIA_ROOT must be {default_media_root}."
-        )
 else:
-    DATABASE_PATH = DATA_DIR / 'db.sqlite3'
-    MEDIA_ROOT = DATA_DIR / 'media'
+    configured_media_root = os.getenv('MEDIA_ROOT', '').strip()
+    MEDIA_ROOT = (
+        Path(configured_media_root).expanduser()
+        if configured_media_root else DATA_DIR / 'media'
+    )
 
 BACKUP_ROOT = DATA_DIR / 'backups'
 
@@ -230,15 +217,32 @@ WSGI_APPLICATION = 'WildLensAI.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DATABASE_PATH,
-        'OPTIONS': {
-            'timeout': 20,
-        },
+DATABASE_URL = os.getenv('DATABASE_URL', '').strip()
+
+if APP_ENV == 'build' and not DATABASE_URL:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    if not DATABASE_URL:
+        raise ImproperlyConfigured(
+            "DATABASE_URL must be set to your Neon PostgreSQL connection string."
+        )
+    parsed_db = dj_database_url.parse(
+        DATABASE_URL,
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+    if parsed_db.get('ENGINE') != 'django.db.backends.postgresql':
+        raise ImproperlyConfigured(
+            "DATABASE_URL must use PostgreSQL (postgresql:// or postgres://)."
+        )
+    DATABASES = {
+        'default': parsed_db,
+    }
 
 
 # Default primary key field type
