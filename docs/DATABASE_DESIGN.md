@@ -1,14 +1,14 @@
 # WildLensAI — Database Design & Schema Documentation
 
-**WildLensAI** utilizes a serverless, file-based **SQLite 3** relational database managed exclusively through the **Django Object-Relational Mapper (ORM)** and schema migration framework. This design delivers zero-configuration, self-contained deployment for local development and B.Tech college viva demonstration, while enforcing strict relational integrity, data privacy, and concurrency safety.
+**WildLensAI** utilizes a serverless, file-based **postgresql 3** relational database managed exclusively through the **Django Object-Relational Mapper (ORM)** and schema migration framework. This design delivers zero-configuration, self-contained deployment for local development and B.Tech college viva demonstration, while enforcing strict relational integrity, data privacy, and concurrency safety.
 
 ---
 
-## 1. Architectural Justification: Why SQLite?
+## 1. Architectural Justification: Why postgresql?
 
-1. **Academic Demonstration & Zero-DevOps:** College project evaluation occurs locally on examiner laptops or classroom projectors. Requiring PostgreSQL, Docker, or Redis introduces needless installation barriers and connection latency. SQLite operates out of a single file (`db.sqlite3`).
-2. **ACID Relational Compliance:** SQLite is fully ACID-compliant. By pairing `transaction.atomic()` with conditional Django `F` expressions, balance deductions and ledger entries are atomic and race-condition free.
-3. **Decoupled Workloads:** Network-bound API invocations (Gemini and LangGraph) run completely **outside** database transaction blocks, ensuring SQLite write locks are held only for sub-millisecond table writes.
+1. **Academic Demonstration & Zero-DevOps:** College project evaluation occurs locally on examiner laptops or classroom projectors. Requiring PostgreSQL, Docker, or Redis introduces needless installation barriers and connection latency. postgresql operates out of a single file (`db.postgresql3`).
+2. **ACID Relational Compliance:** postgresql is fully ACID-compliant. By pairing `transaction.atomic()` with conditional Django `F` expressions, balance deductions and ledger entries are atomic and race-condition free.
+3. **Decoupled Workloads:** Network-bound API invocations (Gemini and LangGraph) run completely **outside** database transaction blocks, ensuring postgresql write locks are held only for sub-millisecond table writes.
 
 ---
 
@@ -169,10 +169,10 @@ General contact, inquiry, and feedback messages.
 
 ---
 
-## 4. Concurrency Safety & Idempotency in SQLite
+## 4. Concurrency Safety & Idempotency in postgresql
 
 ### A. Preventing Negative Balances Without Row Locks
-SQLite lacks row-level `SELECT ... FOR UPDATE` locking. WildLensAI guarantees concurrency safety using atomic conditional SQL updates via Django `F` expressions:
+postgresql lacks row-level `SELECT ... FOR UPDATE` locking. WildLensAI guarantees concurrency safety using atomic conditional SQL updates via Django `F` expressions:
 
 ```python
 updated = Profile.objects.filter(
@@ -186,7 +186,7 @@ if updated == 0:
     raise InsufficientFundsError("Insufficient wallet credits.")
 ```
 If two concurrent identification requests execute simultaneously for a user with only 1 credit:
-1. SQLite serializes the table write.
+1. postgresql serializes the table write.
 2. The first request decrements the balance from 1.00 to 0.00 (`updated == 1`).
 3. The second request tests `wallet_balance__gte=1.00`, which evaluates to false (`updated == 0`), rejecting the charge cleanly.
 

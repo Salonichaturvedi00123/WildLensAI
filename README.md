@@ -1,6 +1,6 @@
 # WildLensAI — Agentic Wildlife Identification, Conversational Assistant & Payment Integration
 
-**WildLensAI** is an evidence-grounded wildlife identification, interactive educational assistant, and digital wallet platform engineered with **Django 5.1+**, **SQLite**, **LangGraph StateGraph**, **Google Gemini Vision**, **Razorpay Test Mode**, and **Django Unfold**.
+**WildLensAI** is an evidence-grounded wildlife identification, interactive educational assistant, and digital wallet platform engineered with **Django 5.1+**, **postgresql**, **LangGraph StateGraph**, **Google Gemini Vision**, **Razorpay Test Mode**, and **Django Unfold**.
 
 Designed for local development and B.Tech college viva demonstration, it allows users to photograph wildlife specimens, identify species with diagnostic visual reasoning, verify taxonomy and biology through live external biological registries (GBIF & MediaWiki), interact with a floating, draggable, and resizable AI assistant via voice or text in English and Hindi, and purchase identification credits through Razorpay Test Mode checkout with server-side cryptographic verification.
 
@@ -14,14 +14,14 @@ WildLensAI combines agentic multimodal artificial intelligence with enterprise-g
 - **Floating, Draggable, Resizable Assistant:** Built with **interact.js**, allowing users on desktop and laptop screens to dock the assistant in the sidebar, undock it into a floating window, drag it freely, resize it within viewport bounds, minimize it to a corner launcher, or maximize it for full-screen analysis. Automatically falls back to an offcanvas drawer on mobile and tablet screens.
 - **Voice Speech Recognition & Playback:** Uses native browser **Web Speech API** (`SpeechRecognition` / `webkitSpeechRecognition`) for microphone speech-to-text with bilingual support (English `en-IN` and Hindi `hi-IN`), coupled with native **SpeechSynthesis** for voice playback with auto-read and speed regulation (0.75x to 1.5x).
 - **Razorpay Sandbox Payment Integration:** Features official **Razorpay Standard Checkout (checkout.js)** and **Razorpay Python SDK** in Test Mode (`RAZORPAY_MODE=test`). Implements strict server-side HMAC-SHA256 signature verification, remote REST capture verification, webhook event logging, localhost reconciliation, and atomic, idempotent wallet updates.
-- **Modern Unfold Admin & Analytics Dashboard:** Powered by **Django Unfold**, featuring a real-time analytics dashboard driven by SQLite ORM aggregations (`Count`, `Sum`, `TruncDate`), date range filtering (`7d`, `30d`, `all`), 5 interactive Chart.js visualizations, and separated Razorpay sandbox volumes.
+- **Modern Unfold Admin & Analytics Dashboard:** Powered by **Django Unfold**, featuring a real-time analytics dashboard driven by postgresql ORM aggregations (`Count`, `Sum`, `TruncDate`), date range filtering (`7d`, `30d`, `all`), 5 interactive Chart.js visualizations, and separated Razorpay sandbox volumes.
 
 ---
 
 ## 2. Architecture & Design Principles
 
 WildLensAI is architected as a robust, single-server monolithic application suitable for academic evaluation:
-1. **No Over-Engineering:** Strictly avoids microservices, Docker, React, Next.js, Celery, Redis, or vector database servers. All persistence lives in embedded SQLite.
+1. **No Over-Engineering:** Strictly avoids microservices, Docker, React, Next.js, Celery, Redis, or vector database servers. All persistence lives in embedded postgresql.
 2. **Evidence-Grounded AI:** Replaces ungrounded LLM hallucinations with live, read-only scientific tools (GBIF Taxonomic Registry & MediaWiki).
 3. **Defense-in-Depth Security:**
    - Secrets remain strictly on the backend (`.env`).
@@ -38,7 +38,7 @@ WildLensAI is architected as a robust, single-server monolithic application suit
 | Layer | Technology | Version | Purpose |
 | :--- | :--- | :--- | :--- |
 | **Backend Framework** | Django | `>=5.1.0` | Monolithic web application, ORM, Auth, Admin, Sessions |
-| **Relational Database**| SQLite 3 | Embedded | Serverless local ACID persistence |
+| **Relational Database**| postgresql 3 | Embedded | Serverless local ACID persistence |
 | **Admin UI** | Django Unfold | `>=0.110.0` | Modern Tailwind-inspired management dashboard & navigation |
 | **AI Multimodal Vision** | Google Gemini Vision | `langchain-google-genai>=2.0.0` | Multimodal visual identification & structured extraction |
 | **Agentic Workflow** | LangGraph | `langgraph>=0.2.0` | Cyclic StateGraph, ToolNode, and execution limits |
@@ -118,7 +118,7 @@ RAZORPAY_MODE=test
 
 ## 6. Database Setup & Migrations
 
-WildLensAI uses SQLite out-of-the-box with pre-configured migrations:
+WildLensAI uses postgresql out-of-the-box with pre-configured migrations:
 
 ```powershell
 # Verify migration integrity
@@ -135,9 +135,9 @@ Default active credit packages (Starter ₹49 / 50 credits, Explorer ₹99 / 120
 
 ---
 
-## 7. Render Deployment (SQLite on Persistent Disk)
+## 7. Render Deployment (postgresql on Persistent Disk)
 
-The application remains SQLite-only. Create a Render Python web service and attach a Persistent Disk mounted at `/var/data`. Do not scale this disk-backed service to multiple instances; Render disks are available to one running service instance and are not available during build or pre-deploy commands.
+The application remains postgresql-only. Create a Render Python web service and attach a Persistent Disk mounted at `/var/data`. Do not scale this disk-backed service to multiple instances; Render disks are available to one running service instance and are not available during build or pre-deploy commands.
 
 Configure these Render service commands:
 
@@ -155,7 +155,7 @@ Add these environment variables in Render’s dashboard. Do not copy `.env` to p
 DJANGO_ENV=production
 STORAGE_MODE=persistent
 DATA_DIR=/var/data
-SQLITE_DB_PATH=/var/data/db.sqlite3
+postgresql_DB_PATH=/var/data/db.postgresql3
 MEDIA_ROOT=/var/data/media
 DEBUG=False
 SECRET_KEY=<strong random secret, at least 50 characters>
@@ -168,7 +168,7 @@ RAZORPAY_WEBHOOK_SECRET=<Razorpay webhook secret>
 RAZORPAY_MODE=test
 ```
 
-The service stores its SQLite database at `/var/data/db.sqlite3`, uploaded images at `/var/data/media/`, and backups at `/var/data/backups/`. Static files remain in the deployment’s `staticfiles/` directory and are served by WhiteNoise. Existing local database and media files are not moved by the application; transfer any required initial data to the mounted disk once, after taking a backup. Never seed the live disk from the repository database on each start.
+The service stores its postgresql database at `/var/data/db.postgresql3`, uploaded images at `/var/data/media/`, and backups at `/var/data/backups/`. Static files remain in the deployment’s `staticfiles/` directory and are served by WhiteNoise. Existing local database and media files are not moved by the application; transfer any required initial data to the mounted disk once, after taking a backup. Never seed the live disk from the repository database on each start.
 
 ### Free Render demo (ephemeral storage)
 
@@ -178,33 +178,33 @@ Render Free does not provide Persistent Disks. To run a non-persistent demo inst
 DJANGO_ENV=production
 STORAGE_MODE=ephemeral
 DATA_DIR=/tmp/wildlens
-SQLITE_DB_PATH=/tmp/wildlens/db.sqlite3
+postgresql_DB_PATH=/tmp/wildlens/db.postgresql3
 MEDIA_ROOT=/tmp/wildlens/media
 ```
 
-The startup script skips the disk-mount check only in this explicit mode, creates the temporary data directories, logs a warning, and uses one Gunicorn worker. SQLite remains the database, but users, identifications, wallet transactions, uploaded files, and backups can disappear on restart, redeploy, or instance replacement. This mode is for disposable demos only; do not use it for real user or payment data. To retain data across deployments, switch back to `STORAGE_MODE=persistent` and attach a paid Render Persistent Disk at `/var/data`.
+The startup script skips the disk-mount check only in this explicit mode, creates the temporary data directories, logs a warning, and uses one Gunicorn worker. postgresql remains the database, but users, identifications, wallet transactions, uploaded files, and backups can disappear on restart, redeploy, or instance replacement. This mode is for disposable demos only; do not use it for real user or payment data. To retain data across deployments, switch back to `STORAGE_MODE=persistent` and attach a paid Render Persistent Disk at `/var/data`.
 
-Render currently creates encrypted persistent-disk snapshots daily and retains them for seven days. A snapshot restores the whole disk, not selected files, and discards disk changes made after that snapshot. Treat snapshots as coarse disk disaster recovery, not as the SQLite backup strategy: a filesystem-level restore is not a substitute for SQLite's consistent online backup and can leave an actively changing database inconsistent. Keep timestamped SQLite backups and matching media archives, and copy them off the Render disk. See [Render's Persistent Disk documentation](https://render.com/docs/disks) for current snapshot behavior and restore limitations.
+Render currently creates encrypted persistent-disk snapshots daily and retains them for seven days. A snapshot restores the whole disk, not selected files, and discards disk changes made after that snapshot. Treat snapshots as coarse disk disaster recovery, not as the postgresql backup strategy: a filesystem-level restore is not a substitute for postgresql's consistent online backup and can leave an actively changing database inconsistent. Keep timestamped postgresql backups and matching media archives, and copy them off the Render disk. See [Render's Persistent Disk documentation](https://render.com/docs/disks) for current snapshot behavior and restore limitations.
 
-### SQLite backups
+### postgresql backups
 
-Create a consistent online backup from the running app’s SQLite connection:
+Create a consistent online backup from the running app’s postgresql connection:
 
 ```bash
-python manage.py backup_sqlite
+python manage.py backup_postgresql
 ```
 
-The command writes a unique UTC-timestamped SQLite file under `/var/data/backups/` and verifies its integrity. Schedule it with an external/manual operational routine appropriate to the service; no background worker is required. Keep a second encrypted copy off the Render disk.
+The command writes a unique UTC-timestamped postgresql file under `/var/data/backups/` and verifies its integrity. Schedule it with an external/manual operational routine appropriate to the service; no background worker is required. Keep a second encrypted copy off the Render disk.
 
 To download a backup, configure SSH access for the service in Render, then use Render’s documented SCP flow from a machine with `scp`:
 
 ```bash
-scp -s YOUR_SERVICE@ssh.YOUR_REGION.render.com:/var/data/backups/db-YYYYMMDDTHHMMSS.ffffffZ.sqlite3 ./wildlens-backup.sqlite3
+scp -s YOUR_SERVICE@ssh.YOUR_REGION.render.com:/var/data/backups/db-YYYYMMDDTHHMMSS.ffffffZ.postgresql3 ./wildlens-backup.postgresql3
 ```
 
-Replace the service, region and filename with the values shown in Render. Store the downloaded copy in a protected location and verify it with `python -c "import sqlite3; c=sqlite3.connect('wildlens-backup.sqlite3'); print(c.execute('PRAGMA integrity_check').fetchone()[0]); c.close()"`.
+Replace the service, region and filename with the values shown in Render. Store the downloaded copy in a protected location and verify it with `python -c "import postgresql3; c=postgresql3.connect('wildlens-backup.postgresql3'); print(c.execute('PRAGMA integrity_check').fetchone()[0]); c.close()"`.
 
-Back up uploaded files separately from the SQLite database:
+Back up uploaded files separately from the postgresql database:
 
 ```bash
 tar -czf "/var/data/backups/media-$(date -u +%Y%m%dT%H%M%SZ).tar.gz" -C /var/data media
@@ -214,7 +214,7 @@ Download that archive with the same SCP procedure. Keep database and media backu
 
 ### Restore
 
-Stop the web service before restoring. Preserve the current `/var/data/db.sqlite3` as a separate file, copy the selected backup to `/var/data/db.sqlite3`, confirm ownership and permissions, then restart the service. Do not overwrite or restore the live database while Gunicorn is running. Restore the matching media archive to `/var/data/` so it recreates `/var/data/media/`.
+Stop the web service before restoring. Preserve the current `/var/data/db.postgresql3` as a separate file, copy the selected backup to `/var/data/db.postgresql3`, confirm ownership and permissions, then restart the service. Do not overwrite or restore the live database while Gunicorn is running. Restore the matching media archive to `/var/data/` so it recreates `/var/data/media/`.
 
 ---
 
@@ -263,7 +263,7 @@ The wallet recharge system operates in **Razorpay Sandbox Test Mode** (`RAZORPAY
 1. **User Selects Package:** User navigates to `/transactions/recharge/` and chooses a credit plan (e.g., Explorer: ₹99 for 120 credits).
 2. **Order Creation:** Frontend requests order creation via POST `/transactions/orders/create/`. The backend:
    - Validates user authentication.
-   - Fetches the active `CreditPlan` price and credits from SQLite.
+   - Fetches the active `CreditPlan` price and credits from postgresql.
    - Calls Razorpay SDK `client.order.create()` with amount in paise.
    - Saves a `PaymentOrder` in `status="created"`.
    - Returns public parameters (`key_id`, `razorpay_order_id`, `amount_paise`, user prefill).
@@ -313,7 +313,7 @@ WildLensAI replaces the standard Django admin with **Django Unfold**:
 
 ## 12. Local Development & Phone Testing
 
-WildLensAI runs locally with SQLite. Test on mobile devices using one of two documented methods:
+WildLensAI runs locally with postgresql. Test on mobile devices using one of two documented methods:
 
 ### Method A: Same Wi-Fi Network (LAN)
 1. Ensure your laptop and smartphone are connected to the same Wi-Fi router.
@@ -403,7 +403,7 @@ Follow this script for a 5-minute academic demonstration:
    - Refresh the page to demonstrate that credits are never duplicated.
 5. **Modern Admin Panel & Analytics Dashboard:**
    - Navigate to `/admin/` and log in with your superuser credentials.
-   - Review the Unfold Dashboard showing real SQLite KPIs and Chart.js graphs.
+   - Review the Unfold Dashboard showing real postgresql KPIs and Chart.js graphs.
    - Click the `7d`, `30d`, and `all` period filter buttons to demonstrate live query filtering.
    - Point out the persistent amber **Razorpay Test Mode Sandbox** banner.
    - In the Users list, select a user and run the **Grant 5 Demo Credits** batch action.

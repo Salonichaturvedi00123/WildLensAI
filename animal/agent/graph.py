@@ -6,7 +6,7 @@ Features:
 - Integration with Gemini multimodal vision identification.
 - ToolNode with approved read-only tools (GBIF Species API & MediaWiki API).
 - Controlled execution guards (max 3 tool executions, max 5 iterations, recursion limit 10).
-- Pure SQLite / Django ORM conversation memory without external vector databases.
+- Pure postgresql / Django ORM conversation memory without external vector databases.
 """
 
 import json

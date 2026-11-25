@@ -1,6 +1,6 @@
 # WildLensAI — Project Architecture & System Design
 
-**WildLensAI** is an AI-powered, agentic wildlife identification and educational platform engineered with **Django**, **SQLite**, **LangGraph**, and Google's **Gemini Vision** API. Designed specifically for reliable local execution and B.Tech academic evaluation, it bridges computer vision, structured reasoning, automated taxonomic verification, and conversational AI into a unified architecture without heavy distributed infrastructure.
+**WildLensAI** is an AI-powered, agentic wildlife identification and educational platform engineered with **Django**, **postgresql**, **LangGraph**, and Google's **Gemini Vision** API. Designed specifically for reliable local execution and B.Tech academic evaluation, it bridges computer vision, structured reasoning, automated taxonomic verification, and conversational AI into a unified architecture without heavy distributed infrastructure.
 
 ---
 
@@ -11,7 +11,7 @@ WildLensAI replaces fragile heuristic scripts and black-box classifiers with an 
 2. **Deterministic Pre-Validation:** The upload is locally validated using **Pillow** (enforcing safe format, decompression bomb protection, size caps, and geometry checks).
 3. **Multimodal Extraction:** The validated image is passed to **Gemini Vision** using Pydantic structured output, extracting observed visual clues, candidate species, and taxonomy.
 4. **LangGraph StateGraph Orchestration:** An agentic state graph evaluates the diagnostic confidence. For identified specimens, it dynamically executes read-only tools against authoritative biological sources (**GBIF Species API** and **MediaWiki**).
-5. **Persistent Context & Audit:** The classification, verified taxonomy, and ecological facts are recorded to an **SQLite** database, creating an interactive conversation session and debiting 1 demo credit atomically.
+5. **Persistent Context & Audit:** The classification, verified taxonomy, and ecological facts are recorded to an **postgresql** database, creating an interactive conversation session and debiting 1 demo credit atomically.
 6. **Context-Aware Dialogue:** The user engages in multi-turn follow-up chat in English or Hindi, grounded strictly in the identified specimen's biological profile.
 
 ```mermaid
@@ -35,7 +35,7 @@ flowchart TD
         AgentNode -->|Final Educational Synthesis| GraphEnd([END])
     end
     
-    GraphEnd --> DB[(SQLite Database)]
+    GraphEnd --> DB[(postgresql Database)]
     DB --> ViewResponse[Render Detail & Chat UI]
     ViewResponse --> User
 ```
@@ -49,7 +49,7 @@ WildLensAI adheres strictly to lightweight, self-contained dependencies suitable
 | Layer | Technology | Purpose & Justification |
 | :--- | :--- | :--- |
 | **Backend Framework** | **Django 5.1+ / Python 3.11+** | Monolithic MVC architecture; integrated authentication, ORM, admin site, and CSRF protection. |
-| **Database** | **SQLite 3** | Zero-configuration, serverless, file-based relational database. Perfect for local college viva demonstrations. |
+| **Database** | **postgresql 3** | Zero-configuration, serverless, file-based relational database. Perfect for local college viva demonstrations. |
 | **Frontend** | **Django Templates, Bootstrap 5, Bootstrap Icons** | Responsive UI with native HTML5/CSS3. Pinned Bootstrap Icons (`1.13.2`) with **zero decorative emojis**. |
 | **Multimodal Vision** | **Google Gemini (`langchain-google-genai`)** | State-of-the-art vision reasoning via `ChatGoogleGenerativeAI` with Pydantic structured outputs. |
 | **Agentic Framework** | **LangGraph (`StateGraph`)** | Cyclic agent graph enabling dynamic tool execution, state loops, and conditional branching. |
@@ -58,7 +58,7 @@ WildLensAI adheres strictly to lightweight, self-contained dependencies suitable
 
 ### Architectural Invariants:
 - **No Redis / Celery:** All operations execute within Django's synchronous request/response cycle, keeping deployment simple.
-- **No Vector Databases:** Semantic search vectors are unnecessary for specimen-grounded conversations; memory is directly persisted in SQLite.
+- **No Vector Databases:** Semantic search vectors are unnecessary for specimen-grounded conversations; memory is directly persisted in postgresql.
 - **No Heavy Client Frameworks:** Avoids Node.js, React, or npm build pipelines; pure server-rendered Django templates with lightweight vanilla JavaScript.
 
 ---
@@ -70,7 +70,7 @@ WildLensAI/
 ├── manage.py
 ├── requirements.txt
 ├── README.md
-├── db.sqlite3
+├── db.postgresql3
 ├── .env.example
 │
 ├── WildLensAI/                  # Core Project Configuration
@@ -150,7 +150,7 @@ WildLensAI/
    - Prevents decompression bombs (`Image.MAX_IMAGE_PIXELS = 20,000,000`).
    - Sanitizes and resizes if dimensions exceed $2048 \times 2048$.
 5. **Decoupled API Invocation:**
-   - Calls `run_wildlife_agent(request_type="image", image_bytes=...)` outside any open database transaction to avoid holding SQLite table locks.
+   - Calls `run_wildlife_agent(request_type="image", image_bytes=...)` outside any open database transaction to avoid holding postgresql table locks.
 6. **Atomic Transaction Ledger:**
    - If `status == "not_animal"`, cost is `0.00` demo credits.
    - If `status in ("identified", "uncertain")`, cost is `1.00` demo credit.
@@ -165,7 +165,7 @@ WildLensAI/
 2. **Context Retrieval:** The view loads the associated `AnimalPrediction` and the last 10 messages from `WildlifeMessage`.
 3. **Agent Invocations:** Injects the active specimen's scientific name, field clues, and taxonomy into `conversation_history` and invokes `run_wildlife_agent(request_type="chat", ...)`.
 4. **Multilingual Reasoning:** If the question is in Hindi, the agent responds in fluent Devanagari script.
-5. **Memory Persistence:** Stores both the user prompt and agent response as `WildlifeMessage` rows in SQLite.
+5. **Memory Persistence:** Stores both the user prompt and agent response as `WildlifeMessage` rows in postgresql.
 6. **Zero Cost:** Conversational chat is 100% free of charge (0 demo credits deducted).
 
 ---
