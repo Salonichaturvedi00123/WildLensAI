@@ -83,8 +83,10 @@ Copy-Item .env.example .env
 
 Configure the environment variables in `.env`:
 ```ini
-# Django Secret Key
-SECRET_KEY=django-insecure-dev-fallback-key-for-local-wildlens
+# Local Django settings
+DJANGO_ENV=development
+DATA_DIR=
+SECRET_KEY=django-insecure-local-development-only
 
 # Debug Mode (True for local development)
 DEBUG=True
@@ -133,7 +135,75 @@ Default active credit packages (Starter ₹49 / 50 credits, Explorer ₹99 / 120
 
 ---
 
-## 7. Floating, Draggable, Resizable AI Assistant
+## 7. Render Deployment (SQLite on Persistent Disk)
+
+The application remains SQLite-only. Create a Render Python web service and attach a Persistent Disk mounted at `/var/data`. Do not scale this disk-backed service to multiple instances; Render disks are available to one running service instance and are not available during build or pre-deploy commands.
+
+Configure these Render service commands:
+
+```text
+Build Command: bash build.sh
+Start Command: bash start.sh
+Health Check Path: /health/
+```
+
+`build.sh` installs `requirements.txt` and runs `collectstatic` using build-only settings. It does not access the persistent disk or run migrations. `start.sh` verifies that `/var/data` is a mounted, writable disk, creates the media and backup directories, applies migrations once, then starts the WSGI application with two Gunicorn workers. A failed disk check or migration stops startup.
+
+Add these environment variables in Render’s dashboard. Do not copy `.env` to production:
+
+```text
+DJANGO_ENV=production
+DATA_DIR=/var/data
+SQLITE_DB_PATH=/var/data/db.sqlite3
+MEDIA_ROOT=/var/data/media
+DEBUG=False
+SECRET_KEY=<strong random secret, at least 50 characters>
+ALLOWED_HOSTS=<service-name>.onrender.com,your-domain.example
+CSRF_TRUSTED_ORIGINS=https://<service-name>.onrender.com,https://your-domain.example
+GEMINI_API_KEY=<Gemini API key>  # or GOOGLE_API_KEY
+RAZORPAY_KEY_ID=<Razorpay key ID>
+RAZORPAY_KEY_SECRET=<Razorpay key secret>
+RAZORPAY_WEBHOOK_SECRET=<Razorpay webhook secret>
+RAZORPAY_MODE=test
+```
+
+The service stores its SQLite database at `/var/data/db.sqlite3`, uploaded images at `/var/data/media/`, and backups at `/var/data/backups/`. Static files remain in the deployment’s `staticfiles/` directory and are served by WhiteNoise. Existing local database and media files are not moved by the application; transfer any required initial data to the mounted disk once, after taking a backup. Never seed the live disk from the repository database on each start.
+
+Render currently creates encrypted persistent-disk snapshots daily and retains them for seven days. A snapshot restores the whole disk, not selected files, and discards disk changes made after that snapshot. Treat snapshots as coarse disk disaster recovery, not as the SQLite backup strategy: a filesystem-level restore is not a substitute for SQLite's consistent online backup and can leave an actively changing database inconsistent. Keep timestamped SQLite backups and matching media archives, and copy them off the Render disk. See [Render's Persistent Disk documentation](https://render.com/docs/disks) for current snapshot behavior and restore limitations.
+
+### SQLite backups
+
+Create a consistent online backup from the running app’s SQLite connection:
+
+```bash
+python manage.py backup_sqlite
+```
+
+The command writes a unique UTC-timestamped SQLite file under `/var/data/backups/` and verifies its integrity. Schedule it with an external/manual operational routine appropriate to the service; no background worker is required. Keep a second encrypted copy off the Render disk.
+
+To download a backup, configure SSH access for the service in Render, then use Render’s documented SCP flow from a machine with `scp`:
+
+```bash
+scp -s YOUR_SERVICE@ssh.YOUR_REGION.render.com:/var/data/backups/db-YYYYMMDDTHHMMSS.ffffffZ.sqlite3 ./wildlens-backup.sqlite3
+```
+
+Replace the service, region and filename with the values shown in Render. Store the downloaded copy in a protected location and verify it with `python -c "import sqlite3; c=sqlite3.connect('wildlens-backup.sqlite3'); print(c.execute('PRAGMA integrity_check').fetchone()[0]); c.close()"`.
+
+Back up uploaded files separately from the SQLite database:
+
+```bash
+tar -czf "/var/data/backups/media-$(date -u +%Y%m%dT%H%M%SZ).tar.gz" -C /var/data media
+```
+
+Download that archive with the same SCP procedure. Keep database and media backups together by timestamp and copy both off the Render disk.
+
+### Restore
+
+Stop the web service before restoring. Preserve the current `/var/data/db.sqlite3` as a separate file, copy the selected backup to `/var/data/db.sqlite3`, confirm ownership and permissions, then restart the service. Do not overwrite or restore the live database while Gunicorn is running. Restore the matching media archive to `/var/data/` so it recreates `/var/data/media/`.
+
+---
+
+## 8. Floating, Draggable, Resizable AI Assistant
 
 The assistant panel on the animal prediction result page (`/predictions/<id>/`) offers four window modes on desktop/laptop displays:
 
@@ -150,7 +220,7 @@ The assistant panel on the animal prediction result page (`/predictions/<id>/`) 
 
 ---
 
-## 8. Voice Speech Recognition & Playback
+## 9. Voice Speech Recognition & Playback
 
 WildLensAI features zero-cost browser-native speech integration without external paid speech services:
 
@@ -170,7 +240,7 @@ WildLensAI features zero-cost browser-native speech integration without external
 
 ---
 
-## 9. Razorpay Test Mode Payment Workflow
+## 10. Razorpay Test Mode Payment Workflow
 
 The wallet recharge system operates in **Razorpay Sandbox Test Mode** (`RAZORPAY_MODE=test`):
 
@@ -200,7 +270,7 @@ The wallet recharge system operates in **Razorpay Sandbox Test Mode** (`RAZORPAY
 
 ---
 
-## 10. Modern Django Unfold Admin & Analytics
+## 11. Modern Django Unfold Admin & Analytics
 
 WildLensAI replaces the standard Django admin with **Django Unfold**:
 
@@ -226,7 +296,7 @@ WildLensAI replaces the standard Django admin with **Django Unfold**:
 
 ---
 
-## 11. Local Development & Phone Testing
+## 12. Local Development & Phone Testing
 
 WildLensAI runs locally with SQLite. Test on mobile devices using one of two documented methods:
 
@@ -267,7 +337,7 @@ Modern mobile browsers (Chrome on Android, Safari on iOS) restrict microphone ac
 
 ---
 
-## 12. Automated Test Suite
+## 13. Automated Test Suite
 
 WildLensAI maintains an automated test suite across all apps with **178 passing tests**:
 
@@ -290,7 +360,7 @@ python manage.py test animal
 
 ---
 
-## 13. Step-by-Step Viva Demonstration Walkthrough
+## 14. Step-by-Step Viva Demonstration Walkthrough
 
 Follow this script for a 5-minute academic demonstration:
 
@@ -325,7 +395,7 @@ Follow this script for a 5-minute academic demonstration:
 
 ---
 
-## 14. Known Limitations & Academic Disclaimers
+## 15. Known Limitations & Academic Disclaimers
 
 1. **Academic Test Mode:** WildLensAI operates exclusively in **Razorpay Test Mode**. It is not configured for commercial payment processing or live currency transactions.
 2. **Synchronous Execution:** External API requests (Gemini, GBIF, MediaWiki, Razorpay) run within Django's request-response cycle bounded by strict HTTPX timeouts (10s for tools, 30s for Gemini) rather than asynchronous background task queues.

@@ -588,7 +588,10 @@ class Phase3RazorpayCheckoutTests(TestCase):
         self.assertIn("Field Explorer Pack", content)
         self.assertIn("Razorpay Sandbox Test Mode", content)
         self.assertIn("https://checkout.razorpay.com/v1/checkout.js", content)
-        self.assertIn("wallet_checkout.js", content)
+        self.assertRegex(
+            content,
+            r"/static/js/wallet_checkout(?:\.[0-9a-f]+)?\.js",
+        )
         self.assertIn("btn-recharge-plan", content)
         self.assertIn("checkout-status-alert-container", content)
         self.assertIn("Your Discovery Credits", content)
@@ -1259,7 +1262,10 @@ class Phase5IntegrationAndSecurityTests(TestCase):
 
         content = response.content.decode("utf-8")
         # Library & drag handle
-        self.assertIn("interact.min.js", content)
+        self.assertRegex(
+            content,
+            r"/static/js/interact\.min(?:\.[0-9a-f]+)?\.js",
+        )
         self.assertIn("chat-header-drag", content)
 
         # Window mode action controls (Dock, Minimize, Maximize, Reset)

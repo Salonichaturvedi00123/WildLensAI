@@ -3,15 +3,12 @@ URL configuration for WildLensAI project.
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
+from animal.views import health_check, protected_media
 
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
+    path('media/<path:media_path>', protected_media, name='protected_media'),
     path('admin/', admin.site.urls),
     path('', include('animal.urls')),
     path('transactions/', include('transactions.urls')),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])

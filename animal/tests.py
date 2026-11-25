@@ -3034,8 +3034,10 @@ class Phase1FloatingDraggableAssistantTests(TestCase):
         self.assertEqual(res.status_code, 200)
         html = res.content.decode("utf-8")
 
-        self.assertIn("interact.min.js", html)
-        self.assertIn('<script src="/static/js/interact.min.js"></script>', html)
+        self.assertRegex(
+            html,
+            r'<script src="/static/js/interact\.min(?:\.[0-9a-f]+)?\.js"></script>',
+        )
 
     def test_header_drag_handle_and_window_controls(self):
         """Verify header drag handle and dock/minimize/maximize/reset window controls."""

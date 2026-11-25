@@ -37,6 +37,10 @@ venv.bak/
 .env.*.local
 
 # Django & SQLite Database (preserve locally, do not commit to VCS)
+/db.sqlite3
+/db.sqlite3-*
+/staticfiles/
+/backups/
 
 
 # Uploaded Media files (ignore user uploads while keeping directory structure)

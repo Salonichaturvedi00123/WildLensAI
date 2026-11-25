@@ -12,7 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
+
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,30 +23,147 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / '.env')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+APP_ENV = os.getenv('DJANGO_ENV', os.getenv('APP_ENV', 'development')).strip().lower()
+if APP_ENV not in {'development', 'production', 'build'}:
+    raise ImproperlyConfigured(
+        "DJANGO_ENV must be 'development', 'build', or 'production'."
+    )
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    'SECRET_KEY',
-    'django-insecure-dev-fallback-key-for-local-wildlens'
-)
+IS_PRODUCTION = APP_ENV == 'production'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
+
+def _environment_bool(name, default):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {'true', '1', 't', 'yes', 'on'}:
+        return True
+    if normalized in {'false', '0', 'f', 'no', 'off'}:
+        return False
+    raise ImproperlyConfigured(f"{name} must be a boolean value.")
+
+
+DEBUG = _environment_bool('DEBUG', APP_ENV == 'development')
+if IS_PRODUCTION and DEBUG:
+    raise ImproperlyConfigured("DEBUG must be False when APP_ENV=production.")
+
+SECRET_KEY = os.getenv('SECRET_KEY', '').strip()
+if IS_PRODUCTION:
+    if (
+        not SECRET_KEY
+        or len(SECRET_KEY) < 50
+        or len(set(SECRET_KEY)) < 5
+        or SECRET_KEY.startswith('django-insecure-')
+    ):
+        raise ImproperlyConfigured(
+            "Production requires a strong SECRET_KEY from the environment."
+        )
 
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
     if host.strip()
 ]
+if IS_PRODUCTION and (not ALLOWED_HOSTS or '*' in ALLOWED_HOSTS):
+    raise ImproperlyConfigured(
+        "Production ALLOWED_HOSTS must contain the exact service and custom domain hostnames."
+    )
 
-# Trusted origins for CSRF protection when testing via local LAN or HTTPS tunnels
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
     if origin.strip()
 ]
+if IS_PRODUCTION:
+    if not CSRF_TRUSTED_ORIGINS:
+        raise ImproperlyConfigured(
+            "Production requires CSRF_TRUSTED_ORIGINS with the deployed HTTPS origin."
+        )
+    for origin in CSRF_TRUSTED_ORIGINS:
+        parsed_origin = urlsplit(origin)
+        if (
+            parsed_origin.scheme != 'https'
+            or not parsed_origin.netloc
+            or parsed_origin.path not in {'', '/'}
+            or parsed_origin.query
+            or parsed_origin.fragment
+        ):
+            raise ImproperlyConfigured(
+                "Production CSRF_TRUSTED_ORIGINS entries must be HTTPS origins."
+            )
+
+if IS_PRODUCTION:
+    configured_data_dir = os.getenv('DATA_DIR', '').strip()
+    if configured_data_dir != '/var/data':
+        raise ImproperlyConfigured(
+            "Production DATA_DIR must be set to the mounted Render disk at /var/data."
+        )
+    DATA_DIR = Path(configured_data_dir)
+    if not DATA_DIR.is_dir() or not os.access(DATA_DIR, os.W_OK):
+        raise ImproperlyConfigured(
+            "Production DATA_DIR must exist and be writable before Django starts."
+        )
+elif APP_ENV == 'build':
+    DATA_DIR = BASE_DIR
+else:
+    configured_data_dir = os.getenv('DATA_DIR', '').strip()
+    DATA_DIR = Path(configured_data_dir).expanduser() if configured_data_dir else BASE_DIR
+
+if APP_ENV == 'build':
+    DATABASE_PATH = DATA_DIR / 'db.sqlite3'
+    MEDIA_ROOT = DATA_DIR / 'media'
+else:
+    default_database_path = DATA_DIR / 'db.sqlite3'
+    configured_database_path = os.getenv('SQLITE_DB_PATH', '').strip()
+    DATABASE_PATH = (
+        Path(configured_database_path).expanduser()
+        if configured_database_path else default_database_path
+    )
+    default_media_root = DATA_DIR / 'media'
+    configured_media_root = os.getenv('MEDIA_ROOT', '').strip()
+    MEDIA_ROOT = (
+        Path(configured_media_root).expanduser()
+        if configured_media_root else default_media_root
+    )
+
+    if IS_PRODUCTION:
+        if DATABASE_PATH.resolve() != default_database_path.resolve():
+            raise ImproperlyConfigured(
+                "Production SQLITE_DB_PATH must be /var/data/db.sqlite3."
+            )
+        if MEDIA_ROOT.resolve() != default_media_root.resolve():
+            raise ImproperlyConfigured(
+                "Production MEDIA_ROOT must be /var/data/media."
+            )
+
+BACKUP_ROOT = DATA_DIR / 'backups'
+
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_WEBHOOK_SECRET = os.getenv('RAZORPAY_WEBHOOK_SECRET', '')
+RAZORPAY_MODE = os.getenv(
+    'RAZORPAY_MODE',
+    '' if IS_PRODUCTION else 'test'
+).strip().lower()
+
+if IS_PRODUCTION:
+    required_provider_values = {
+        'GOOGLE_API_KEY or GEMINI_API_KEY': os.getenv('GOOGLE_API_KEY') or os.getenv('GEMINI_API_KEY'),
+        'RAZORPAY_KEY_ID': RAZORPAY_KEY_ID,
+        'RAZORPAY_KEY_SECRET': RAZORPAY_KEY_SECRET,
+        'RAZORPAY_WEBHOOK_SECRET': RAZORPAY_WEBHOOK_SECRET,
+    }
+    missing_provider_values = [
+        name for name, value in required_provider_values.items()
+        if not value or 'placeholder' in value.lower() or 'your_' in value.lower()
+    ]
+    if missing_provider_values:
+        raise ImproperlyConfigured(
+            "Missing production integration settings: " + ', '.join(missing_provider_values)
+        )
+    if RAZORPAY_MODE not in {'test', 'live'}:
+        raise ImproperlyConfigured("Production RAZORPAY_MODE must be explicitly set to 'test' or 'live'.")
 
 
 # Application definition
@@ -62,13 +182,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-     'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'WildLensAI.urls'
@@ -97,7 +217,10 @@ WSGI_APPLICATION = 'WildLensAI.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DATABASE_PATH,
+        'OPTIONS': {
+            'timeout': 20,
+        },
     }
 }
 
@@ -143,7 +266,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
-
+STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STORAGES = {
@@ -157,18 +280,42 @@ STORAGES = {
 
 # Media files (User uploaded images)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / "media"
+FILE_UPLOAD_PERMISSIONS = 0o640
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o750
+
+# Trust Render's TLS termination header only in the production deployment.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if IS_PRODUCTION else None
+SECURE_SSL_REDIRECT = IS_PRODUCTION or _environment_bool(
+    'SECURE_SSL_REDIRECT',
+    False,
+)
+SESSION_COOKIE_SECURE = IS_PRODUCTION or _environment_bool(
+    'SESSION_COOKIE_SECURE',
+    False,
+)
+CSRF_COOKIE_SECURE = IS_PRODUCTION or _environment_bool(
+    'CSRF_COOKIE_SECURE',
+    False,
+)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SECURE_HSTS_SECONDS = int(os.getenv(
+    'SECURE_HSTS_SECONDS',
+    '3600' if IS_PRODUCTION else '0'
+))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _environment_bool(
+    'SECURE_HSTS_INCLUDE_SUBDOMAINS',
+    False
+)
+SECURE_HSTS_PRELOAD = _environment_bool('SECURE_HSTS_PRELOAD', False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 # Authentication redirects
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
-
-# Razorpay Payment Gateway Configuration (Test Mode by default)
-RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID", "rzp_test_placeholder_key")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET", "placeholder_secret")
-RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "")
-RAZORPAY_MODE = os.getenv("RAZORPAY_MODE", "test").lower()
 
 # Django Unfold Configuration
 UNFOLD = {

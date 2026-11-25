@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib import messages
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt
@@ -111,7 +112,11 @@ def user_login(request):
                 defaults={"wallet_balance": Decimal("5.00")}
             )
             messages.success(request, f"Welcome back, {user.username}!")
-            if next_url and next_url.startswith("/"):
+            if next_url and url_has_allowed_host_and_scheme(
+                next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+            ):
                 return redirect(next_url)
             return redirect("home")
         else:
@@ -425,11 +430,11 @@ def reconcile_order(request, order_id):
             "message": message,
             "wallet_balance": float(request.user.profile.wallet_balance),
         })
-    except Exception as exc:
-        logger.exception(f"Reconciliation error for order {order_id}: {exc}")
+    except Exception:
+        logger.exception("Reconciliation error for order %s.", order_id)
         return JsonResponse({
             "success": False,
-            "error": f"Failed to reconcile order: {str(exc)}"
+            "error": "Failed to reconcile the order. Please try again later."
         }, status=500)
 
 

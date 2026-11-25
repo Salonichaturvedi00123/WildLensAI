@@ -134,7 +134,9 @@ def create_razorpay_payment_order(user, plan_id, client=None) -> dict:
         rzp_order = rzp_client.order.create(data=order_payload)
     except Exception as exc:
         logger.exception(f"Razorpay order creation API request failed for user {user.username}: {exc}")
-        raise PaymentOrderError(f"Failed to create order with Razorpay: {str(exc)}") from exc
+        raise PaymentOrderError(
+            "Failed to create an order with Razorpay. Please try again later."
+        ) from exc
 
     razorpay_order_id = rzp_order.get("id")
     if not razorpay_order_id:
@@ -244,7 +246,9 @@ def credit_wallet_for_verified_order(
             payment = rzp_client.payment.fetch(payment_id)
         except Exception as exc:
             logger.exception(f"Razorpay payment fetch failed for payment {payment_id}: {exc}")
-            raise PaymentVerificationError(f"Could not verify payment with Razorpay: {str(exc)}") from exc
+            raise PaymentVerificationError(
+                "Could not verify payment with Razorpay. Please retry later."
+            ) from exc
 
         # Ensure payment response is a dictionary
         if isinstance(payment, dict):
@@ -384,7 +388,7 @@ def reconcile_payment_order(order: PaymentOrder, client=None):
         payments_data = rzp_client.order.fetch_payments(order.razorpay_order_id)
     except Exception as exc:
         logger.warning(f"Failed to fetch order payments from Razorpay for {order.razorpay_order_id}: {exc}")
-        return False, f"Could not contact Razorpay: {str(exc)}", None, order.status
+        return False, "Could not contact Razorpay. Please retry later.", None, order.status
 
     items = payments_data.get("items", []) if isinstance(payments_data, dict) else []
     if not items:

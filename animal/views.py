@@ -1,12 +1,16 @@
 import json
 import logging
+import mimetypes
 import time
 import uuid
 from decimal import Decimal
+from pathlib import PurePosixPath
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.http import JsonResponse
+from django.core.exceptions import SuspiciousFileOperation
+from django.db import DatabaseError, connection
+from django.views.decorators.http import require_GET, require_POST
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.contrib import messages
 from django.db import transaction
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, AnyMessage
@@ -29,6 +33,66 @@ from transactions.models import Profile, WalletTransaction
 from transactions.services import deduct_prediction_credit
 
 logger = logging.getLogger(__name__)
+
+
+@require_GET
+def health_check(request):
+    """Return readiness only when Django can query its configured database."""
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+    except DatabaseError:
+        logger.exception("Health check could not query the configured database.")
+        return HttpResponse("unavailable", status=503)
+    return HttpResponse("ok")
+
+
+@require_GET
+def protected_media(request, media_path):
+    """Serve stored images only to their owner or a staff user."""
+    if not request.user.is_authenticated:
+        raise Http404
+
+    parsed_path = PurePosixPath(media_path)
+    if (
+        not media_path
+        or "\x00" in media_path
+        or "\\" in media_path
+        or parsed_path.is_absolute()
+        or parsed_path.as_posix() != media_path
+        or any(part in {".", ".."} for part in parsed_path.parts)
+    ):
+        raise Http404
+
+    stored_file = None
+    prediction = AnimalPrediction.objects.filter(uploaded_image=media_path).first()
+    if prediction and (
+        request.user.is_staff or prediction.user_id == request.user.id
+    ):
+        stored_file = prediction.uploaded_image
+    else:
+        profiles = Profile.objects.filter(profile_image=media_path)
+        if request.user.is_staff:
+            profile = profiles.first()
+        else:
+            profile = profiles.filter(user=request.user).first()
+        if profile:
+            stored_file = profile.profile_image
+
+    if not stored_file:
+        raise Http404
+
+    try:
+        stored_file.open("rb")
+    except (FileNotFoundError, SuspiciousFileOperation):
+        raise Http404
+
+    content_type = mimetypes.guess_type(stored_file.name)[0] or "application/octet-stream"
+    response = FileResponse(stored_file, content_type=content_type)
+    response["Cache-Control"] = "private, no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 def home(request):
@@ -160,8 +224,12 @@ def predict(request):
                 'request_id': request_id,
                 'insufficient_credits': False,
             })
-        except Exception as e:
-            messages.error(request, f'Wildlife agent execution encountered an error: {e}')
+        except Exception:
+            logger.exception("Unexpected wildlife agent execution error.")
+            messages.error(
+                request,
+                "Wildlife identification failed unexpectedly. Please try again later."
+            )
             return render(request, 'animal/predict.html', {
                 'prediction': None,
                 'profile': user_profile,
@@ -535,9 +603,18 @@ def assistant_chat(request):
             user_message=message,
             conversation_history=history
         )
-    except (GeminiQuotaError, GeminiTimeoutError, GeminiModelAccessError, GeminiServiceError) as exc:
-        logger.error("LangGraph assistant execution error: %s", exc)
-        return JsonResponse({"success": False, "error": f"Assistant service notice: {exc}"}, status=503)
+    except GeminiQuotaError as exc:
+        logger.warning("LangGraph assistant quota error: %s", exc)
+        return JsonResponse({
+            "success": False,
+            "error": f"Assistant service notice: {exc}",
+        }, status=503)
+    except (GeminiTimeoutError, GeminiModelAccessError, GeminiServiceError):
+        logger.exception("LangGraph assistant execution error.")
+        return JsonResponse({
+            "success": False,
+            "error": "The assistant service is temporarily unavailable. Please try again later."
+        }, status=503)
     except Exception as exc:
         logger.error("Unexpected assistant execution error: %s", exc)
         return JsonResponse({

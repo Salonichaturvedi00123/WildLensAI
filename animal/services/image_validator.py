@@ -72,10 +72,6 @@ def validate_and_process_image(file_obj):
     # Validate image data with Pillow
     byte_stream = io.BytesIO(raw_bytes)
 
-    # Protect against decompression bomb attacks
-    old_max_pixels = Image.MAX_IMAGE_PIXELS
-    Image.MAX_IMAGE_PIXELS = MAX_PIXELS
-
     try:
         with Image.open(byte_stream) as img:
             # 1. Check format
@@ -127,7 +123,6 @@ def validate_and_process_image(file_obj):
     except Exception as e:
         raise ImageValidationError(f"Failed to process image file: {e}") from e
     finally:
-        Image.MAX_IMAGE_PIXELS = old_max_pixels
         if hasattr(file_obj, "seek"):
             try:
                 file_obj.seek(0)
