@@ -46,7 +46,7 @@ def _environment_bool(name, default):
 
 DEBUG = _environment_bool('DEBUG', APP_ENV == 'development')
 if IS_PRODUCTION and DEBUG:
-    raise ImproperlyConfigured("DEBUG must be False when APP_ENV=production.")
+    raise ImproperlyConfigured("DEBUG must be False when DJANGO_ENV=production.")
 
 SECRET_KEY = os.getenv('SECRET_KEY', '').strip()
 if IS_PRODUCTION:
@@ -93,16 +93,30 @@ if IS_PRODUCTION:
                 "Production CSRF_TRUSTED_ORIGINS entries must be HTTPS origins."
             )
 
+STORAGE_MODE = os.getenv(
+    'STORAGE_MODE',
+    'persistent' if IS_PRODUCTION else 'local',
+).strip().lower()
+
 if IS_PRODUCTION:
-    configured_data_dir = os.getenv('DATA_DIR', '').strip()
-    if configured_data_dir != '/var/data':
+    if STORAGE_MODE not in {'persistent', 'ephemeral'}:
         raise ImproperlyConfigured(
-            "Production DATA_DIR must be set to the mounted Render disk at /var/data."
+            "Production STORAGE_MODE must be 'persistent' or 'ephemeral'."
+        )
+    configured_data_dir = os.getenv('DATA_DIR', '').strip()
+    expected_data_dir = (
+        '/var/data' if STORAGE_MODE == 'persistent' else '/tmp/wildlens'
+    )
+    if configured_data_dir != expected_data_dir:
+        raise ImproperlyConfigured(
+            f"Production DATA_DIR must be {expected_data_dir} for "
+            f"STORAGE_MODE={STORAGE_MODE}."
         )
     DATA_DIR = Path(configured_data_dir)
     if not DATA_DIR.is_dir() or not os.access(DATA_DIR, os.W_OK):
         raise ImproperlyConfigured(
-            "Production DATA_DIR must exist and be writable before Django starts."
+            f"Production DATA_DIR must exist and be writable for "
+            f"STORAGE_MODE={STORAGE_MODE}."
         )
 elif APP_ENV == 'build':
     DATA_DIR = BASE_DIR
@@ -113,7 +127,7 @@ else:
 if APP_ENV == 'build':
     DATABASE_PATH = DATA_DIR / 'db.sqlite3'
     MEDIA_ROOT = DATA_DIR / 'media'
-else:
+elif IS_PRODUCTION:
     default_database_path = DATA_DIR / 'db.sqlite3'
     configured_database_path = os.getenv('SQLITE_DB_PATH', '').strip()
     DATABASE_PATH = (
@@ -127,15 +141,17 @@ else:
         if configured_media_root else default_media_root
     )
 
-    if IS_PRODUCTION:
-        if DATABASE_PATH.resolve() != default_database_path.resolve():
-            raise ImproperlyConfigured(
-                "Production SQLITE_DB_PATH must be /var/data/db.sqlite3."
-            )
-        if MEDIA_ROOT.resolve() != default_media_root.resolve():
-            raise ImproperlyConfigured(
-                "Production MEDIA_ROOT must be /var/data/media."
-            )
+    if DATABASE_PATH.resolve() != default_database_path.resolve():
+        raise ImproperlyConfigured(
+            f"Production SQLITE_DB_PATH must be {default_database_path}."
+        )
+    if MEDIA_ROOT.resolve() != default_media_root.resolve():
+        raise ImproperlyConfigured(
+            f"Production MEDIA_ROOT must be {default_media_root}."
+        )
+else:
+    DATABASE_PATH = DATA_DIR / 'db.sqlite3'
+    MEDIA_ROOT = DATA_DIR / 'media'
 
 BACKUP_ROOT = DATA_DIR / 'backups'
 

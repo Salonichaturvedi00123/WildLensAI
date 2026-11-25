@@ -153,6 +153,7 @@ Add these environment variables in Render’s dashboard. Do not copy `.env` to p
 
 ```text
 DJANGO_ENV=production
+STORAGE_MODE=persistent
 DATA_DIR=/var/data
 SQLITE_DB_PATH=/var/data/db.sqlite3
 MEDIA_ROOT=/var/data/media
@@ -168,6 +169,20 @@ RAZORPAY_MODE=test
 ```
 
 The service stores its SQLite database at `/var/data/db.sqlite3`, uploaded images at `/var/data/media/`, and backups at `/var/data/backups/`. Static files remain in the deployment’s `staticfiles/` directory and are served by WhiteNoise. Existing local database and media files are not moved by the application; transfer any required initial data to the mounted disk once, after taking a backup. Never seed the live disk from the repository database on each start.
+
+### Free Render demo (ephemeral storage)
+
+Render Free does not provide Persistent Disks. To run a non-persistent demo instead, use a Free web service and set:
+
+```text
+DJANGO_ENV=production
+STORAGE_MODE=ephemeral
+DATA_DIR=/tmp/wildlens
+SQLITE_DB_PATH=/tmp/wildlens/db.sqlite3
+MEDIA_ROOT=/tmp/wildlens/media
+```
+
+The startup script skips the disk-mount check only in this explicit mode, creates the temporary data directories, logs a warning, and uses one Gunicorn worker. SQLite remains the database, but users, identifications, wallet transactions, uploaded files, and backups can disappear on restart, redeploy, or instance replacement. This mode is for disposable demos only; do not use it for real user or payment data. To retain data across deployments, switch back to `STORAGE_MODE=persistent` and attach a paid Render Persistent Disk at `/var/data`.
 
 Render currently creates encrypted persistent-disk snapshots daily and retains them for seven days. A snapshot restores the whole disk, not selected files, and discards disk changes made after that snapshot. Treat snapshots as coarse disk disaster recovery, not as the SQLite backup strategy: a filesystem-level restore is not a substitute for SQLite's consistent online backup and can leave an actively changing database inconsistent. Keep timestamped SQLite backups and matching media archives, and copy them off the Render disk. See [Render's Persistent Disk documentation](https://render.com/docs/disks) for current snapshot behavior and restore limitations.
 
